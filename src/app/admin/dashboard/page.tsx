@@ -28,9 +28,10 @@ import { AdminHeader } from "../components/header";
 import { mockTickets } from "@/lib/mock-data";
 import { RepairTicket } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { differenceInDays, formatDistanceToNow } from "date-fns";
+import { differenceInDays } from "date-fns";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { TimeAgo } from "../components/time-ago";
 
 const chartData = [
   { name: "Jan", revenue: 400000 },
@@ -193,9 +194,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium">{item.description}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(item.time, { addSuffix: true })}
-                      </p>
+                      <TimeAgo date={item.time} />
                     </div>
                   </div>
                 ))}
