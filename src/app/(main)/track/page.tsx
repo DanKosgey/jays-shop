@@ -28,7 +28,7 @@ const statusOrder: RepairTicket['status'][] = ['received', 'diagnosing', 'awaiti
 
 function TrackPageContent() {
   const searchParams = useSearchParams();
-  const [ticketNumber, setTicketNumber] = useState(searchParams.get("ticketNumber") || "");
+  const [ticketNumber, setTicketNumber] = useState(searchParams.get("ticketNumber") || "RPR-2025-0001");
   const [ticket, setTicket] = useState<RepairTicket | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -194,5 +194,3 @@ export default function TrackPage() {
         </Suspense>
     )
 }
-
-    
