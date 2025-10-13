@@ -8,21 +8,21 @@
     },
     {
       "id": "how-it-works-1",
-      "description": "A customer submitting a repair ticket online.",
+      "description": "A person using their smartphone to submit an online repair ticket.",
       "imageUrl": "https://picsum.photos/seed/2/500/500",
-      "imageHint": "person computer"
+      "imageHint": "person smartphone"
     },
     {
       "id": "how-it-works-2",
-      "description": "A phone being diagnosed by a technician.",
+      "description": "A technician examining a smartphone with diagnostic tools.",
       "imageUrl": "https://picsum.photos/seed/3/500/500",
       "imageHint": "phone diagnosis"
     },
     {
       "id": "how-it-works-3",
-      "description": "A happy customer receiving their repaired phone.",
+      "description": "A customer receiving their fully repaired smartphone over a counter.",
       "imageUrl": "https://picsum.photos/seed/4/500/500",
-      "imageHint": "happy customer"
+      "imageHint": "customer phone"
     },
     {
       "id": "product-case",
@@ -44,21 +44,21 @@
     },
     {
       "id": "product-powerbank",
-      "description": "A portable power bank.",
+      "description": "A portable power bank charging a smartphone.",
       "imageUrl": "https://picsum.photos/seed/104/400/400",
       "imageHint": "power bank"
     },
     {
       "id": "product-screen-protector",
-      "description": "A tempered glass screen protector.",
+      "description": "A tempered glass screen protector being applied to a phone.",
       "imageUrl": "https://picsum.photos/seed/105/400/400",
       "imageHint": "screen protector"
     },
     {
       "id": "product-smartwatch",
-      "description": "A modern smartwatch.",
+      "description": "A modern smartwatch displaying notifications next to a phone.",
       "imageUrl": "https://picsum.photos/seed/106/400/400",
-      "imageHint": "smartwatch"
+      "imageHint": "smartwatch phone"
     },
     {
       "id": "ticket-photo-1",
@@ -71,6 +71,18 @@
       "description": "Water damage indicator on a smartphone's internal component.",
       "imageUrl": "https://picsum.photos/seed/202/400/300",
       "imageHint": "water damage"
+    },
+    {
+      "id": "product-car-mount",
+      "description": "A phone mounted on a car dashboard.",
+      "imageUrl": "https://picsum.photos/seed/110/400/400",
+      "imageHint": "car mount"
+    },
+    {
+      "id": "product-ring-holder",
+      "description": "A ring holder attached to the back of a phone.",
+      "imageUrl": "https://picsum.photos/seed/111/400/400",
+      "imageHint": "phone ring"
     }
   ]
 }
