@@ -29,6 +29,11 @@ export type Product = {
   isFeatured: boolean;
 };
 
+export type SecondHandProduct = Product & {
+    condition: 'Like New' | 'Good' | 'Fair';
+    sellerName: string;
+};
+
 export type User = {
   name: string;
   email: string;

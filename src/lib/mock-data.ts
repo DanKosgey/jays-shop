@@ -1,5 +1,5 @@
 
-import type { RepairTicket, Product, User } from './types';
+import type { RepairTicket, Product, User, SecondHandProduct } from './types';
 
 export const mockUser: User = {
   name: 'Admin User',
@@ -121,7 +121,7 @@ export const mockProducts: Product[] = [
     description: 'Ultra-thin, lightweight case with a sliding camera cover for privacy and lens protection. Features a sleek carbon fiber finish for superior drop protection.',
     price: 3500.00,
     stockQuantity: 75,
-    imageUrl: 'https://picsum.photos/seed/galaxy-case-dark/400/400',
+    imageUrl: 'https://picsum.photos/seed/galaxy-case-dark-2/400/400',
     imageHint: 'camera cover',
     isFeatured: true,
   },
@@ -185,4 +185,64 @@ export const mockProducts: Product[] = [
     imageHint: 'phone ring',
     isFeatured: false,
   },
+];
+
+
+export const mockSecondHandProducts: SecondHandProduct[] = [
+    {
+        id: 'sh-prod-1',
+        name: 'Used Apple iPhone 12',
+        slug: 'used-apple-iphone-12',
+        category: 'Smartphones',
+        description: 'Well-maintained iPhone 12, 128GB, in Pacific Blue. Minor scuffs on the edges, but screen is flawless. Battery health at 88%. Comes with original box.',
+        price: 55000.00,
+        stockQuantity: 1,
+        imageUrl: 'https://picsum.photos/seed/used-iphone-12/400/400',
+        imageHint: 'used iphone',
+        isFeatured: false,
+        condition: 'Good',
+        sellerName: 'Jane D.',
+    },
+    {
+        id: 'sh-prod-2',
+        name: 'Refurbished Samsung 4K TV - 55 inch',
+        slug: 'refurb-samsung-4k-tv-55',
+        category: 'TVs',
+        description: 'Professionally refurbished 55" Samsung Crystal UHD TV. Looks and works like new. No dead pixels. Remote included. 6-month warranty.',
+        price: 48000.00,
+        stockQuantity: 1,
+        imageUrl: 'https://picsum.photos/seed/used-tv/400/400',
+        imageHint: 'used tv',
+        isFeatured: false,
+        condition: 'Like New',
+        sellerName: 'Jays phone repair shop',
+    },
+     {
+        id: 'sh-prod-3',
+        name: 'Used Sony WH-1000XM4 Headphones',
+        slug: 'used-sony-wh1000xm4',
+        category: 'Audio',
+        description: 'Industry-leading noise-canceling headphones. Show some signs of wear on the earcups but work perfectly. Includes carrying case and cables.',
+        price: 18000.00,
+        stockQuantity: 1,
+        imageUrl: 'https://picsum.photos/seed/used-headphones/400/400',
+        imageHint: 'used headphones',
+        isFeatured: false,
+        condition: 'Good',
+        sellerName: 'Mike R.',
+    },
+     {
+        id: 'sh-prod-4',
+        name: 'Used Google Pixel 5',
+        slug: 'used-google-pixel-5',
+        category: 'Smartphones',
+        description: 'Just the phone. Has a noticeable scratch on the back, but the screen and camera are in perfect condition. Unlocked for all carriers. Great budget camera phone.',
+        price: 25000.00,
+        stockQuantity: 1,
+        imageUrl: 'https://picsum.photos/seed/used-pixel-5/400/400',
+        imageHint: 'used smartphone',
+        isFeatured: false,
+        condition: 'Fair',
+        sellerName: 'Chris P.',
+    }
 ];
