@@ -16,16 +16,12 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
 } from "recharts";
-import { Wrench, Ticket, DollarSign, Package, Users, Activity, ShoppingCart } from "lucide-react";
+import { Wrench, ShoppingCart, DollarSign, Users } from "lucide-react";
 import { mockTickets } from "@/lib/mock-data";
-import { RepairTicket } from "@/lib/types";
 
 const revenueData = [
   { name: "Jan", revenue: 400000 },
@@ -59,7 +55,7 @@ const COLORS = [
 
 export default function AnalyticsPage() {
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <AdminHeader title="Analytics" />
       <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
         <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
@@ -114,7 +110,13 @@ export default function AnalyticsPage() {
             <CardContent className="pl-2">
               <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `Ksh${Number(value) / 1000}k`} />
                   <Tooltip
@@ -122,10 +124,11 @@ export default function AnalyticsPage() {
                     contentStyle={{
                       backgroundColor: "hsl(var(--background))",
                       borderColor: "hsl(var(--border))",
+                      borderRadius: "var(--radius)",
                     }}
                      formatter={(value) => [`Ksh ${Number(value).toLocaleString()}`, "Revenue"]}
                   />
-                  <Bar dataKey="revenue" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="revenue" fill="url(#colorRevenue)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -144,19 +147,11 @@ export default function AnalyticsPage() {
                     cy="50%"
                     labelLine={false}
                     outerRadius={120}
-                    fill="hsl(var(--chart-2))"
+                    innerRadius={80}
+                    paddingAngle={5}
                     dataKey="value"
-                    label={({ name, percent, fill }) => (
-                      <text
-                        x={0}
-                        y={0}
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        fill={fill === 'hsl(var(--chart-1))' ? 'black' : 'white'}
-                        fontSize="12"
-                      >
-                        {`${name} ${(percent * 100).toFixed(0)}%`}
-                      </text>
+                    label={({ name, percent }) => (
+                      `${name} ${(percent * 100).toFixed(0)}%`
                     )}
                   >
                     {ticketStatusData.map((entry, index) => (
@@ -168,6 +163,7 @@ export default function AnalyticsPage() {
                     contentStyle={{
                       backgroundColor: "hsl(var(--background))",
                       borderColor: "hsl(var(--border))",
+                      borderRadius: "var(--radius)",
                     }}
                     formatter={(value, name) => [value, name.charAt(0).toUpperCase() + name.slice(1)]}
                   />
