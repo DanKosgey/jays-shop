@@ -1,4 +1,5 @@
-import { SidebarProvider, Sidebar, SidebarInset, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
+import { SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Wrench } from "lucide-react";
 import Link from "next/link";
 import { AdminNav } from "./components/admin-nav";
