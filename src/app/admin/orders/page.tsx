@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AdminHeader } from "../components/header";
@@ -74,9 +75,9 @@ export default function OrdersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Order ID</TableHead>
+                  <TableHead className="hidden sm:table-cell">Order ID</TableHead>
                   <TableHead>Customer</TableHead>
-                  <TableHead>Date</TableHead>
+                  <TableHead className="hidden md:table-cell">Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead>
@@ -87,9 +88,12 @@ export default function OrdersPage() {
               <TableBody>
                 {mockOrders.map((order) => (
                   <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.id}</TableCell>
-                    <TableCell>{order.customerName}</TableCell>
-                    <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
+                    <TableCell className="font-medium hidden sm:table-cell">{order.id}</TableCell>
+                    <TableCell>
+                      <div className="font-medium">{order.customerName}</div>
+                      <div className="text-xs text-muted-foreground sm:hidden">{order.id}</div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">{new Date(order.date).toLocaleDateString()}</TableCell>
                     <TableCell>
                         <Badge variant={statusVariant[order.status]}>{order.status}</Badge>
                     </TableCell>

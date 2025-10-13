@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AdminHeader } from "../components/header";
@@ -138,11 +139,11 @@ export default function TicketsPage() {
      <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Ticket ID</TableHead>
+            <TableHead className="hidden sm:table-cell">Ticket ID</TableHead>
             <TableHead>Customer</TableHead>
-            <TableHead>Age (Days)</TableHead>
+            <TableHead className="hidden md:table-cell text-center">Age (Days)</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="text-right">Est. Cost</TableHead>
+            <TableHead className="text-right hidden sm:table-cell">Est. Cost</TableHead>
             <TableHead>
               <span className="sr-only">Actions</span>
             </TableHead>
@@ -155,9 +156,12 @@ export default function TicketsPage() {
 
             return (
                 <TableRow key={ticket.id} className={cn(isOverdue && "bg-destructive/10 hover:bg-destructive/20")}>
-                <TableCell className="font-medium">{ticket.ticketNumber}</TableCell>
-                <TableCell>{ticket.customerName}</TableCell>
+                <TableCell className="font-medium hidden sm:table-cell">{ticket.ticketNumber}</TableCell>
                 <TableCell>
+                    <div className="font-medium">{ticket.customerName}</div>
+                    <div className="text-xs text-muted-foreground sm:hidden">{ticket.ticketNumber}</div>
+                </TableCell>
+                <TableCell className="hidden md:table-cell text-center">
                     <span className={cn("font-semibold", isOverdue ? "text-destructive" : "text-muted-foreground")}>
                         {ageInDays}
                     </span>
@@ -167,7 +171,7 @@ export default function TicketsPage() {
                     {ticket.status.replace("_", " ")}
                     </Badge>
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right hidden sm:table-cell">
                     {ticket.estimatedCost ? `Ksh${ticket.estimatedCost.toFixed(2)}` : 'N/A'}
                 </TableCell>
                 <TableCell>
@@ -202,7 +206,7 @@ export default function TicketsPage() {
       <AdminHeader title="Repair Tickets" />
       <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
         <Tabs defaultValue="active">
-            <div className="flex items-center">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                  <TabsList>
                     <TabsTrigger value="active">Active</TabsTrigger>
                     <TabsTrigger value="completed">Completed</TabsTrigger>

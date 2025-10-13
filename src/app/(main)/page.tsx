@@ -88,17 +88,17 @@ function HomePageContent() {
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-primary/50 to-primary" />
         <div className="relative z-10 container max-w-4xl px-4">
-          <h1 className="text-4xl md:text-6xl font-headline font-bold mb-4 tracking-wider uppercase">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-headline font-bold mb-4 tracking-wider uppercase">
             Welcome to Jay's: Your Device's Next Evolution.
           </h1>
-          <p className="text-lg md:text-xl mb-8 text-primary-foreground/80">
+          <p className="text-md sm:text-lg md:text-xl mb-8 text-primary-foreground/80">
             Advanced diagnostics, AI-assisted support, and premium device enhancements.
           </p>
           <div className="max-w-xl mx-auto">
-            <form onSubmit={handleTrackSubmit} className="flex w-full gap-2 bg-background/20 backdrop-blur-sm rounded-lg p-2 border border-primary-foreground/20 shadow-lg">
+            <form onSubmit={handleTrackSubmit} className="flex flex-col sm:flex-row w-full gap-2 bg-background/20 backdrop-blur-sm rounded-lg p-2 border border-primary-foreground/20 shadow-lg">
               <Input
                 type="text"
-                placeholder="Enter your ticket number (e.g., RPR-2025-0001)"
+                placeholder="Enter ticket number (e.g., RPR-2025-0001)"
                 value={ticketNumber}
                 onChange={(e) => setTicketNumber(e.target.value)}
                 className="flex-grow border-0 focus-visible:ring-0 text-base bg-transparent text-primary-foreground placeholder:text-primary-foreground/60"
@@ -113,9 +113,9 @@ function HomePageContent() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-20 bg-background">
+      <section className="py-12 md:py-20 bg-background">
         <div className="container max-w-7xl px-4 text-center">
-          <h2 className="text-3xl font-headline font-bold mb-4 tracking-wide">The Repair Protocol</h2>
+          <h2 className="text-2xl md:text-3xl font-headline font-bold mb-4 tracking-wide">The Repair Protocol</h2>
           <p className="text-muted-foreground mb-12 max-w-2xl mx-auto">
             Our streamlined process ensures your device is back in optimal condition swiftly.
           </p>
@@ -138,9 +138,9 @@ function HomePageContent() {
       </section>
 
       {/* Featured Products Section */}
-      <section className="py-20 bg-muted/20">
+      <section className="py-12 md:py-20 bg-muted/20">
         <div className="container max-w-7xl px-4">
-          <h2 className="text-3xl font-headline font-bold mb-4 text-center tracking-wide">Device Enhancements</h2>
+          <h2 className="text-2xl md:text-3xl font-headline font-bold mb-4 text-center tracking-wide">Device Enhancements</h2>
           <p className="text-muted-foreground mb-12 text-center max-w-2xl mx-auto">
             Upgrade your hardware with our curated selection of high-performance accessories.
           </p>
@@ -178,9 +178,9 @@ function HomePageContent() {
       </section>
 
        {/* Why Choose Us Section */}
-      <section className="py-20 bg-background">
+      <section className="py-12 md:py-20 bg-background">
         <div className="container max-w-7xl px-4 text-center">
-          <h2 className="text-3xl font-headline font-bold mb-12 tracking-wide">Why Jay's phone repair shop?</h2>
+          <h2 className="text-2xl md:text-3xl font-headline font-bold mb-12 tracking-wide">Why Jay's phone repair shop?</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {whyChooseUs.map((feature, index) => (
               <div key={index} className="flex flex-col items-center gap-4 p-6 rounded-lg border border-transparent hover:border-accent/30 hover:bg-muted/30 transition-colors">

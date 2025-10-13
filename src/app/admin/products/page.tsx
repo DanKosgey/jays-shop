@@ -138,8 +138,8 @@ export default function ProductsPage() {
                     <span className="sr-only">Image</span>
                   </TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-center">Stock</TableHead>
+                  <TableHead className="hidden md:table-cell">Category</TableHead>
+                  <TableHead className="hidden sm:table-cell text-center">Stock</TableHead>
                   <TableHead className="text-right">Price</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
@@ -159,10 +159,10 @@ export default function ProductsPage() {
                       />
                     </TableCell>
                     <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       <Badge variant="outline">{product.category}</Badge>
                     </TableCell>
-                    <TableCell className="text-center">{product.stockQuantity}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-center">{product.stockQuantity}</TableCell>
                     <TableCell className="text-right">Ksh{product.price.toFixed(2)}</TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -200,8 +200,8 @@ export default function ProductsPage() {
                     <span className="sr-only">Image</span>
                   </TableHead>
                   <TableHead>Name</TableHead>
-                   <TableHead>Condition</TableHead>
-                  <TableHead>Category</TableHead>
+                   <TableHead className="hidden sm:table-cell">Condition</TableHead>
+                  <TableHead className="hidden md:table-cell">Category</TableHead>
                   <TableHead className="text-right">Price</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
@@ -221,10 +221,10 @@ export default function ProductsPage() {
                       />
                     </TableCell>
                     <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <Badge variant="secondary">{product.condition}</Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       <Badge variant="outline">{product.category}</Badge>
                     </TableCell>
                     <TableCell className="text-right">Ksh{product.price.toFixed(2)}</TableCell>

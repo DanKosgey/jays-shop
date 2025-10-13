@@ -1,3 +1,4 @@
+
 "use client";
 import {
   Card,
@@ -224,9 +225,9 @@ export default function DashboardPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Customer</TableHead>
-                      <TableHead>Device</TableHead>
+                      <TableHead className="hidden sm:table-cell">Device</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Est. Cost</TableHead>
+                      <TableHead className="text-right hidden sm:table-cell">Est. Cost</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -244,13 +245,13 @@ export default function DashboardPage() {
                               </div>
                           </div>
                         </TableCell>
-                        <TableCell>{ticket.deviceModel}</TableCell>
+                        <TableCell className="hidden sm:table-cell">{ticket.deviceModel}</TableCell>
                         <TableCell>
                           <Badge variant={statusVariant[ticket.status]} className="capitalize">
                             {ticket.status.replace("_", " ")}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right hidden sm:table-cell">
                           {ticket.estimatedCost ? `Ksh${ticket.estimatedCost.toFixed(2)}` : 'N/A'}
                         </TableCell>
                       </TableRow>

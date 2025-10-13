@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AdminHeader } from "../components/header";
@@ -89,8 +90,8 @@ export default function CustomersPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Customer</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead className="text-center">Total Tickets</TableHead>
+                  <TableHead className="hidden md:table-cell">Contact</TableHead>
+                  <TableHead className="hidden sm:table-cell text-center">Total Tickets</TableHead>
                   <TableHead className="text-right">Total Spent</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
@@ -109,11 +110,11 @@ export default function CustomersPage() {
                         <div className="font-medium">{customer.name}</div>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                         <div className="text-sm text-muted-foreground">{customer.email}</div>
                         <div className="text-sm text-muted-foreground">{customer.phone}</div>
                     </TableCell>
-                    <TableCell className="text-center">{customer.totalTickets}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-center">{customer.totalTickets}</TableCell>
                     <TableCell className="text-right">Ksh{customer.totalSpent.toFixed(2)}</TableCell>
                     <TableCell>
                       <DropdownMenu>
