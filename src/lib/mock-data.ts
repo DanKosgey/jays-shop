@@ -3,8 +3,8 @@ import type { RepairTicket, Product, User } from './types';
 
 export const mockUser: User = {
   name: 'Admin User',
-  email: 'admin@repairhub.com',
-  avatar: 'https://i.pravatar.cc/150?u=admin@repairhub.com',
+  email: 'admin@jaysphonerepair.com',
+  avatar: 'https://i.pravatar.cc/150?u=admin@jaysphonerepair.com',
 };
 
 export const mockTickets: RepairTicket[] = [
@@ -121,7 +121,7 @@ export const mockProducts: Product[] = [
     description: 'Ultra-thin, lightweight case with a sliding camera cover for privacy and lens protection. Features a sleek carbon fiber finish for superior drop protection.',
     price: 3500.00,
     stockQuantity: 75,
-    imageUrl: 'https://picsum.photos/seed/galaxy-case-2/400/400',
+    imageUrl: 'https://picsum.photos/seed/galaxy-case-dark/400/400',
     imageHint: 'camera cover',
     isFeatured: true,
   },
@@ -133,7 +133,7 @@ export const mockProducts: Product[] = [
     description: 'Charge up to 4 devices simultaneously. Perfect for laptops, phones, and tablets with Power Delivery.',
     price: 8000.00,
     stockQuantity: 40,
-    imageUrl: 'https://picsum.photos/seed/102/400/400',
+    imageUrl: 'https://picsum.photos/seed/phone-charger-2/400/400',
     imageHint: 'charging station',
     isFeatured: true,
   },
@@ -145,7 +145,7 @@ export const mockProducts: Product[] = [
     description: 'Immersive sound with adaptive noise cancellation. Up to 30 hours of listening time with charging case.',
     price: 12500.00,
     stockQuantity: 30,
-    imageUrl: 'https://picsum.photos/seed/103/400/400',
+    imageUrl: 'https://picsum.photos/seed/earphones-2/400/400',
     imageHint: 'wireless earphones',
     isFeatured: true,
   },
@@ -157,7 +157,7 @@ export const mockProducts: Product[] = [
     description: 'Securely mount your phone in your car with this strong magnetic vent holder. Adjustable and easy to install.',
     price: 2800.00,
     stockQuantity: 110,
-    imageUrl: 'https://picsum.photos/seed/110/400/400',
+    imageUrl: 'https://picsum.photos/seed/car-mount-2/400/400',
     imageHint: 'car mount',
     isFeatured: false,
   },
@@ -169,7 +169,7 @@ export const mockProducts: Product[] = [
     description: '9H hardness ballistic glass for ultimate scratch and impact protection. Includes easy alignment tool.',
     price: 2500.00,
     stockQuantity: 200,
-    imageUrl: 'https://picsum.photos/seed/105/400/400',
+    imageUrl: 'https://picsum.photos/seed/screen-protector-2/400/400',
     imageHint: 'screen protector',
     isFeatured: false,
   },
@@ -181,10 +181,8 @@ export const mockProducts: Product[] = [
     description: 'A versatile ring that provides a secure grip on your phone and doubles as a kickstand for hands-free viewing.',
     price: 1500.00,
     stockQuantity: 150,
-    imageUrl: 'https://picsum.photos/seed/111/400/400',
+    imageUrl: 'https://picsum.photos/seed/phone-ring-2/400/400',
     imageHint: 'phone ring',
     isFeatured: false,
   },
 ];
-
-    
