@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AdminHeader } from "../components/header";
@@ -104,10 +105,23 @@ export default function ProductsPage() {
                         <AddSecondHandItemForm />
                     </DialogContent>
                 </Dialog>
-                <Button size="sm" className="h-8 gap-1">
-                    <PlusCircle className="h-3.5 w-3.5" />
-                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Add New Product</span>
-                </Button>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button size="sm" className="h-8 gap-1">
+                            <PlusCircle className="h-3.5 w-3.5" />
+                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Add New Product</span>
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Add New Product</DialogTitle>
+                            <DialogDescription>
+                                Fill in the details to add a new product to your inventory.
+                            </DialogDescription>
+                        </DialogHeader>
+                        {/* Add form for new product here */}
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
 
@@ -241,3 +255,5 @@ export default function ProductsPage() {
     </div>
   );
 }
+
+    
