@@ -1,3 +1,6 @@
+
+'use client';
+
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -7,9 +10,20 @@ import { Search, Smartphone, Wrench, ShieldCheck, Tag, ThumbsUp } from "lucide-r
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { mockProducts } from "@/lib/mock-data";
 import { Product } from "@/lib/types";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function HomePage() {
+  const router = useRouter();
+  const [ticketNumber, setTicketNumber] = useState('RPR-2025-0001');
   const heroImage = PlaceHolderImages.find(p => p.id === 'hero-repair');
+
+  const handleTrackSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (ticketNumber) {
+      router.push(`/track?ticketNumber=${ticketNumber}`);
+    }
+  };
 
   const howItWorksSteps = [
     {
@@ -72,11 +86,12 @@ export default function HomePage() {
             Track your repair status, get instant AI-powered help, or shop for accessories.
           </p>
           <div className="max-w-xl mx-auto">
-            <form className="flex w-full gap-2 bg-white rounded-lg p-2 shadow-lg">
+            <form onSubmit={handleTrackSubmit} className="flex w-full gap-2 bg-white rounded-lg p-2 shadow-lg">
               <Input
                 type="text"
                 placeholder="Enter your ticket number (e.g., RPR-2025-0001)"
-                defaultValue="RPR-2025-0001"
+                value={ticketNumber}
+                onChange={(e) => setTicketNumber(e.target.value)}
                 className="flex-grow border-0 focus-visible:ring-0 text-base"
               />
               <Button type="submit" size="lg">

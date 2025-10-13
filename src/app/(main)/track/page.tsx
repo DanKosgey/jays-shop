@@ -1,6 +1,8 @@
+
 "use client";
 
-import { useState, type FormEvent } from "react";
+import React, { useState, useEffect, type FormEvent, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -23,24 +25,24 @@ const statusInfo = {
 
 const statusOrder: RepairTicket['status'][] = ['received', 'diagnosing', 'awaiting_parts', 'repairing', 'quality_check', 'ready', 'completed'];
 
-export default function TrackPage() {
-  const [ticketNumber, setTicketNumber] = useState("RPR-2025-0001");
+function TrackPageContent() {
+  const searchParams = useSearchParams();
+  const [ticketNumber, setTicketNumber] = useState(searchParams.get("ticketNumber") || "RPR-2025-0001");
   const [ticket, setTicket] = useState<RepairTicket | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSearch = (e: FormEvent) => {
-    e.preventDefault();
+  const performSearch = (searchTicketNumber: string) => {
     setError(null);
     setTicket(null);
-    if (!ticketNumber.trim()) {
+    if (!searchTicketNumber.trim()) {
         setError("Please enter a ticket number.");
         return;
     }
     setLoading(true);
     setTimeout(() => {
         const foundTicket = mockTickets.find(
-            (t) => t.ticketNumber.toLowerCase() === ticketNumber.toLowerCase().trim()
+            (t) => t.ticketNumber.toLowerCase() === searchTicketNumber.toLowerCase().trim()
         );
 
         if (foundTicket) {
@@ -52,8 +54,20 @@ export default function TrackPage() {
     }, 1000);
   };
 
-  const currentStatusIndex = ticket ? statusOrder.indexOf(ticket.status) : -1;
+  useEffect(() => {
+    const ticketFromUrl = searchParams.get("ticketNumber");
+    if (ticketFromUrl) {
+      setTicketNumber(ticketFromUrl);
+      performSearch(ticketFromUrl);
+    }
+  }, [searchParams]);
 
+  const handleSearch = (e: FormEvent) => {
+    e.preventDefault();
+    performSearch(ticketNumber);
+  };
+
+  const currentStatusIndex = ticket ? statusOrder.indexOf(ticket.status) : -1;
 
   return (
     <div className="container max-w-4xl mx-auto py-12 px-4">
@@ -157,4 +171,13 @@ export default function TrackPage() {
       )}
     </div>
   );
+}
+
+
+export default function TrackPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <TrackPageContent />
+        </Suspense>
+    )
 }
