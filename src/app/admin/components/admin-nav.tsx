@@ -20,11 +20,11 @@ import {
 
 const navItems = [
   { href: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/admin/analytics", icon: LineChart, label: "Analytics" },
   { href: "/admin/tickets", icon: Ticket, label: "Tickets" },
   { href: "/admin/products", icon: Package, label: "Products" },
   { href: "/admin/orders", icon: ShoppingCart, label: "Orders" },
   { href: "/admin/customers", icon: Users, label: "Customers" },
-  { href: "/admin/analytics", icon: LineChart, label: "Analytics" },
 ];
 
 const settingsItem = {

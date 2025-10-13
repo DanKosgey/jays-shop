@@ -9,6 +9,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  AreaChart,
+  Area,
   BarChart,
   Bar,
   XAxis,
@@ -19,9 +21,11 @@ import {
   PieChart,
   Pie,
   Cell,
+  Legend,
 } from "recharts";
 import { Wrench, ShoppingCart, DollarSign, Users } from "lucide-react";
 import { mockTickets } from "@/lib/mock-data";
+import { ChartTooltipContent, ChartContainer, ChartTooltip } from "@/components/ui/chart";
 
 const revenueData = [
   { name: "Jan", revenue: 400000 },
@@ -105,38 +109,38 @@ export default function AnalyticsPage() {
           <Card className="lg:col-span-4">
             <CardHeader>
               <CardTitle>Revenue Overview</CardTitle>
-              <CardDescription>Monthly revenue breakdown.</CardDescription>
+              <CardDescription>A visual breakdown of monthly revenue performance.</CardDescription>
             </CardHeader>
             <CardContent className="pl-2">
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={revenueData}>
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0.1}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `Ksh${Number(value) / 1000}k`} />
-                  <Tooltip
-                    cursor={{fill: 'hsl(var(--muted))'}}
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--background))",
-                      borderColor: "hsl(var(--border))",
-                      borderRadius: "var(--radius)",
-                    }}
-                     formatter={(value) => [`Ksh ${Number(value).toLocaleString()}`, "Revenue"]}
-                  />
-                  <Bar dataKey="revenue" fill="url(#colorRevenue)" radius={[4, 4, 0, 0]} />
-                </BarChart>
+                <ResponsiveContainer width="100%" height={350}>
+                    <AreaChart data={revenueData}>
+                    <defs>
+                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0.1}/>
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `Ksh${Number(value) / 1000}k`} />
+                    <Tooltip
+                        cursor={{stroke: 'hsl(var(--chart-1))', strokeWidth: 1, fill: 'hsl(var(--muted))', fillOpacity: 0.5}}
+                        contentStyle={{
+                        backgroundColor: "hsl(var(--background))",
+                        borderColor: "hsl(var(--border))",
+                        borderRadius: "var(--radius)",
+                        }}
+                        formatter={(value: number) => [`Ksh ${value.toLocaleString()}`, "Revenue"]}
+                    />
+                    <Area type="monotone" dataKey="revenue" stroke="hsl(var(--chart-1))" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
+                    </AreaChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
           <Card className="lg:col-span-3">
             <CardHeader>
               <CardTitle>Ticket Status Distribution</CardTitle>
-               <CardDescription>Current status of all repair tickets.</CardDescription>
+               <CardDescription>A snapshot of the current status across all repair tickets.</CardDescription>
             </CardHeader>
             <CardContent>
                <ResponsiveContainer width="100%" height={350}>
@@ -167,6 +171,7 @@ export default function AnalyticsPage() {
                     }}
                     formatter={(value, name) => [value, name.charAt(0).toUpperCase() + name.slice(1)]}
                   />
+                  <Legend/>
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
