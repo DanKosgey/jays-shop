@@ -203,8 +203,8 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-           <Card className="lg:col-span-4">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-8">
+           <Card>
             <CardHeader>
               <CardTitle>Recent Tickets</CardTitle>
               <CardDescription>An overview of the latest repair tickets.</CardDescription>
@@ -249,9 +249,9 @@ export default function DashboardPage() {
               </Table>
             </CardContent>
           </Card>
-          <Card className="lg:col-span-3">
+          <Card>
             <CardHeader>
-              <CardTitle>Notifications & Alerts</CardTitle>
+              <CardTitle>Notifications &amp; Alerts</CardTitle>
               <CardDescription>Actionable insights and reminders.</CardDescription>
             </CardHeader>
             <CardContent>
