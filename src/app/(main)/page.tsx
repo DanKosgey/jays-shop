@@ -132,7 +132,7 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent className="p-6">
                   <h3 className="text-lg font-bold font-headline mb-2">{product.name}</h3>
-                  <p className="text-2xl font-semibold text-accent mb-4">${product.price.toFixed(2)}</p>
+                  <p className="text-2xl font-semibold text-accent mb-4">Ksh{product.price.toFixed(2)}</p>
                   <Button asChild className="w-full">
                     <Link href={`/product/${product.slug}`}>View Product</Link>
                   </Button>

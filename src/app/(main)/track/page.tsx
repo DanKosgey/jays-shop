@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Search, Hourglass, CheckCircle, Wrench, Package, Microscope, ShieldQuestion, CircleDotDashed } from "lucide-react";
+import { Search, Hourglass, CheckCircle, Wrench, Package, Microscope, ShieldQuestion, CircleDotDashed, XCircle, Loader2 } from "lucide-react";
 import { mockTickets } from "@/lib/mock-data";
 import type { RepairTicket } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -22,16 +22,6 @@ const statusInfo = {
 };
 
 const statusOrder: RepairTicket['status'][] = ['received', 'diagnosing', 'awaiting_parts', 'repairing', 'quality_check', 'ready', 'completed'];
-
-function XCircle(props: React.SVGProps<SVGSVGElement>) {
-    return (
-        <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="15" y1="9" x2="9" y2="15" />
-            <line x1="9" y1="9" x2="15" y2="15" />
-        </svg>
-    )
-}
 
 export default function TrackPage() {
   const [ticketNumber, setTicketNumber] = useState("");
@@ -148,8 +138,8 @@ export default function TrackPage() {
                         <CardTitle className="text-lg">Cost & Timeline</CardTitle>
                     </CardHeader>
                     <CardContent className="text-sm space-y-2">
-                         <p><strong>Estimated Cost:</strong> {ticket.estimatedCost ? `$${ticket.estimatedCost.toFixed(2)}` : 'Pending'}</p>
-                        <p><strong>Final Cost:</strong> {ticket.finalCost ? `$${ticket.finalCost.toFixed(2)}` : 'Pending'}</p>
+                         <p><strong>Estimated Cost:</strong> {ticket.estimatedCost ? `Ksh${ticket.estimatedCost.toFixed(2)}` : 'Pending'}</p>
+                        <p><strong>Final Cost:</strong> {ticket.finalCost ? `Ksh${ticket.finalCost.toFixed(2)}` : 'Pending'}</p>
                         <p><strong>Estimated Completion:</strong> {ticket.estimatedCompletion ? new Date(ticket.estimatedCompletion).toLocaleDateString() : 'Pending'}</p>
                     </CardContent>
                 </Card>
@@ -167,12 +157,4 @@ export default function TrackPage() {
       )}
     </div>
   );
-}
-
-function Loader2(props: React.SVGProps<SVGSVGElement>) {
-    return (
-        <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-        </svg>
-    )
 }

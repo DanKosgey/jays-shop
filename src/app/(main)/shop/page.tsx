@@ -65,7 +65,7 @@ export default function ShopPage() {
                   <h3 className="text-base font-bold font-headline mb-2 flex-1">{product.name}</h3>
                   <p className="text-sm text-muted-foreground mb-2">{product.category}</p>
                   <div className="flex items-center justify-between mt-auto">
-                    <p className="text-xl font-semibold text-accent">${product.price.toFixed(2)}</p>
+                    <p className="text-xl font-semibold text-accent">Ksh{product.price.toFixed(2)}</p>
                     <Button asChild size="sm">
                       <Link href={`/product/${product.slug}`}>View</Link>
                     </Button>

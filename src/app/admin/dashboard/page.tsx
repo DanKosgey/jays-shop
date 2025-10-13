@@ -31,13 +31,13 @@ import { mockTickets } from "@/lib/mock-data";
 import { RepairTicket } from "@/lib/types";
 
 const chartData = [
-  { name: "Jan", revenue: 4000 },
-  { name: "Feb", revenue: 3000 },
-  { name: "Mar", revenue: 5000 },
-  { name: "Apr", revenue: 4500 },
-  { name: "May", revenue: 6000 },
-  { name: "Jun", revenue: 5500 },
-  { name: "Jul", revenue: 7000 },
+  { name: "Jan", revenue: 400000 },
+  { name: "Feb", revenue: 300000 },
+  { name: "Mar", revenue: 500000 },
+  { name: "Apr", revenue: 450000 },
+  { name: "May", revenue: 600000 },
+  { name: "Jun", revenue: 550000 },
+  { name: "Jul", revenue: 700000 },
 ];
 
 const statusVariant: { [key in RepairTicket["status"]]: "default" | "secondary" | "destructive" | "outline" } = {
@@ -65,7 +65,7 @@ export default function DashboardPage() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$45,231.89</div>
+              <div className="text-2xl font-bold">Ksh 4,523,189</div>
               <p className="text-xs text-muted-foreground">+20.1% from last month</p>
             </CardContent>
           </Card>
@@ -111,12 +111,13 @@ export default function DashboardPage() {
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                  <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `Ksh${Number(value)/1000}k`} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "hsl(var(--background))",
                       borderColor: "hsl(var(--border))",
                     }}
+                    formatter={(value: number) => [`Ksh ${value.toLocaleString()}`, "Revenue"]}
                   />
                   <Legend />
                   <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
