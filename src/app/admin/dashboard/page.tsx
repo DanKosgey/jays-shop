@@ -16,19 +16,18 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
-  BarChart,
-  Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
-import { Wrench, Ticket, DollarSign, Package } from "lucide-react";
+import { Wrench, Ticket, DollarSign, Package, Users, ShoppingCart } from "lucide-react";
 import { AdminHeader } from "../components/header";
 import { mockTickets } from "@/lib/mock-data";
 import { RepairTicket } from "@/lib/types";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const chartData = [
   { name: "Jan", revenue: 400000 },
@@ -51,8 +50,24 @@ const statusVariant: { [key in RepairTicket["status"]]: "default" | "secondary" 
     cancelled: "destructive",
 }
 
+const recentActivity = [
+    { icon: <Ticket className="h-5 w-5 text-accent"/>, description: "New ticket #RPR-2025-0004 created for Diana Prince.", time: "5m ago" },
+    { icon: <ShoppingCart className="h-5 w-5 text-accent"/>, description: "Order #ORD-003 status changed to Shipped.", time: "30m ago" },
+    { icon: <Wrench className="h-5 w-5 text-accent"/>, description: "Repair for #RPR-2025-0001 is now complete.", time: "1h ago" },
+    { icon: <Users className="h-5 w-5 text-accent"/>, description: "New customer 'Charlie Brown' registered.", time: "2h ago" },
+    { icon: <Package className="h-5 w-5 text-accent"/>, description: "New product 'Volta-Charge 100W PD Station' was added.", time: "1d ago" },
+];
+
+
 export default function DashboardPage() {
   const recentTickets = mockTickets.slice(0, 5);
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("");
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -105,27 +120,54 @@ export default function DashboardPage() {
           <Card className="lg:col-span-4">
             <CardHeader>
               <CardTitle>Revenue Overview</CardTitle>
+               <CardDescription>Monthly revenue performance.</CardDescription>
             </CardHeader>
             <CardContent className="pl-2">
               <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `Ksh${Number(value)/1000}k`} />
+                 <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `Ksh${Number(value)/1000}k`} />
                   <Tooltip
-                    contentStyle={{
+                     cursor={{stroke: 'hsl(var(--chart-1))', strokeWidth: 2, fill: 'hsl(var(--muted))', fillOpacity: 0.5}}
+                     contentStyle={{
                       backgroundColor: "hsl(var(--background))",
                       borderColor: "hsl(var(--border))",
+                      borderRadius: "var(--radius)",
                     }}
                     formatter={(value: number) => [`Ksh ${value.toLocaleString()}`, "Revenue"]}
                   />
-                  <Legend />
-                  <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                </BarChart>
+                  <Area type="monotone" dataKey="revenue" stroke="hsl(var(--chart-1))" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                </AreaChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
           <Card className="lg:col-span-3">
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>A log of the most recent activities in the store.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {recentActivity.map((activity, index) => (
+                    <div key={index} className="flex items-start gap-4">
+                       <div className="bg-muted p-2 rounded-full">{activity.icon}</div>
+                        <div className="flex-1">
+                            <p className="text-sm">{activity.description}</p>
+                            <p className="text-xs text-muted-foreground">{activity.time}</p>
+                        </div>
+                    </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        <Card>
             <CardHeader>
               <CardTitle>Recent Tickets</CardTitle>
               <CardDescription>An overview of the latest repair tickets.</CardDescription>
@@ -135,30 +177,41 @@ export default function DashboardPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Customer</TableHead>
-                    <TableHead>Status</TableHead>
                     <TableHead>Device</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Est. Cost</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {recentTickets.map((ticket) => (
                     <TableRow key={ticket.id}>
                       <TableCell>
-                        <div className="font-medium">{ticket.customerName}</div>
-                        <div className="text-sm text-muted-foreground">{ticket.ticketNumber}</div>
+                        <div className="flex items-center gap-3">
+                           <Avatar className="hidden h-9 w-9 sm:flex">
+                                <AvatarImage src={`https://i.pravatar.cc/150?u=${ticket.customerName}`} alt={ticket.customerName} />
+                                <AvatarFallback>{getInitials(ticket.customerName)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <div className="font-medium">{ticket.customerName}</div>
+                                <div className="text-sm text-muted-foreground">{ticket.ticketNumber}</div>
+                            </div>
+                        </div>
                       </TableCell>
+                      <TableCell>{ticket.deviceModel}</TableCell>
                       <TableCell>
                         <Badge variant={statusVariant[ticket.status]} className="capitalize">
                           {ticket.status.replace("_", " ")}
                         </Badge>
                       </TableCell>
-                      <TableCell>{ticket.deviceModel}</TableCell>
+                       <TableCell className="text-right">
+                        {ticket.estimatedCost ? `Ksh${ticket.estimatedCost.toFixed(2)}` : 'N/A'}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
-        </div>
       </main>
     </div>
   );
