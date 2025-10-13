@@ -21,47 +21,11 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator";
 
 const conditions = ["Like New", "Good", "Fair"];
-
-function SellItemForm() {
-    return (
-        <form className="grid gap-6 p-1">
-            <div className="grid gap-2">
-                <Label htmlFor="item-name">Item Name</Label>
-                <Input id="item-name" placeholder="e.g., iPhone 12 Pro" />
-            </div>
-            <div className="grid gap-2">
-                <Label htmlFor="item-condition">Condition</Label>
-                <select id="item-condition" className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                    <option>Like New</option>
-                    <option>Good</option>
-                    <option>Fair</option>
-                </select>
-            </div>
-            <div className="grid gap-2">
-                <Label htmlFor="asking-price">Asking Price (Ksh)</Label>
-                <Input id="asking-price" type="number" placeholder="e.g., 60000" />
-            </div>
-             <div className="grid gap-2">
-                <Label htmlFor="item-photos">Upload Photos</Label>
-                <Input id="item-photos" type="file" multiple className="pt-2"/>
-            </div>
-             <div className="grid gap-2">
-                <Label htmlFor="item-description">Description</Label>
-                <textarea id="item-description" placeholder="Describe the item, including any wear and tear." className="flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"></textarea>
-            </div>
-
-            <Button type="submit" className="w-full">Submit for Review</Button>
-        </form>
-    )
-}
 
 export default function MarketplacePage() {
   const categories = [...new Set(mockSecondHandProducts.map((p) => p.category))];
@@ -72,30 +36,13 @@ export default function MarketplacePage() {
         {/* Header Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-headline font-bold mb-3">Second-Hand Marketplace</h1>
-          <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">Find great deals on pre-owned electronics or sell your own gear.</p>
+          <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">Find great deals on pre-owned electronics, exclusively sold by Jays phone repair shop.</p>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8 xl:gap-12">
           {/* Filters Sidebar */}
           <aside className="w-full lg:w-1/4 xl:w-1/5">
             <div className="sticky top-24 space-y-8">
-              <div>
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <Button size="lg" className="w-full">Sell Your Item</Button>
-                    </SheetTrigger>
-                    <SheetContent>
-                      <SheetHeader>
-                        <SheetTitle className="font-headline text-2xl">Sell a Second-Hand Item</SheetTitle>
-                        <SheetDescription>
-                          Fill out the details below. Our team will review your submission and list it on the marketplace if approved.
-                        </SheetDescription>
-                      </SheetHeader>
-                      <Separator className="my-6" />
-                      <SellItemForm />
-                    </SheetContent>
-                  </Sheet>
-              </div>
               <div className="hidden lg:block">
                   <h3 className="text-xl font-semibold font-headline mb-6">Filter Products</h3>
                   <div className="space-y-6">
@@ -253,4 +200,3 @@ export default function MarketplacePage() {
     </div>
   );
 }
-
