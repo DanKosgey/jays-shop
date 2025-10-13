@@ -121,8 +121,8 @@ export const mockProducts: Product[] = [
     description: 'Ultra-thin, lightweight case with superior drop protection and a sleek carbon fiber finish.',
     price: 3500.00,
     stockQuantity: 75,
-    imageUrl: 'https://picsum.photos/seed/101/400/400',
-    imageHint: 'phone case',
+    imageUrl: 'https://picsum.photos/seed/galaxy-case/400/400',
+    imageHint: 'carbon case',
     isFeatured: true,
   },
   {
