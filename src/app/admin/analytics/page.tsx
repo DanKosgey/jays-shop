@@ -84,7 +84,7 @@ const chartConfig = {
   },
   completed: {
     label: "Completed",
-    color: "hsl(var(--chart-3))",
+    color: "hsl(var(--muted-foreground))",
   },
   cancelled: {
     label: "Cancelled",
@@ -193,7 +193,7 @@ export default function AnalyticsPage() {
           </Card>
           <Card className="lg:col-span-3 flex flex-col">
             <CardHeader>
-              <CardTitle>Active Ticket Status</CardTitle>
+              <CardTitle>Ticket Status Distribution</CardTitle>
                <CardDescription>A snapshot of the current status across all active repair tickets.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 pb-0">
