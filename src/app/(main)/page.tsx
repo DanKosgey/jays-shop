@@ -76,6 +76,7 @@ export default function HomePage() {
               <Input
                 type="text"
                 placeholder="Enter your ticket number (e.g., RPR-2025-0001)"
+                defaultValue="RPR-2025-0001"
                 className="flex-grow border-0 focus-visible:ring-0 text-base"
               />
               <Button type="submit" size="lg">
