@@ -11,8 +11,6 @@ import {
 import {
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -25,7 +23,9 @@ import {
 } from "recharts";
 import { Wrench, ShoppingCart, DollarSign, Users } from "lucide-react";
 import { mockTickets } from "@/lib/mock-data";
-import { ChartTooltipContent, ChartContainer, ChartTooltip } from "@/components/ui/chart";
+import { ChartTooltipContent, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
+import { useMemo } from "react";
+import type { ChartConfig } from "@/components/ui/chart";
 
 const revenueData = [
   { name: "Jan", revenue: 400000 },
@@ -48,16 +48,52 @@ const ticketStatusData = mockTickets.reduce((acc, ticket) => {
     return acc;
 }, [] as { name: string, value: number }[]);
 
-const COLORS = [
-    "hsl(var(--chart-1))",
-    "hsl(var(--chart-2))",
-    "hsl(var(--chart-3))",
-    "hsl(var(--chart-4))",
-    "hsl(var(--chart-5))",
-];
+
+const chartConfig = {
+  tickets: {
+    label: "Tickets",
+  },
+  repairing: {
+    label: "Repairing",
+    color: "hsl(var(--chart-1))",
+  },
+  diagnosing: {
+    label: "Diagnosing",
+    color: "hsl(var(--chart-2))",
+  },
+  "awaiting parts": {
+    label: "Awaiting Parts",
+    color: "hsl(var(--chart-3))",
+  },
+  received: {
+    label: "Received",
+    color: "hsl(var(--chart-4))",
+  },
+  ready: {
+    label: "Ready",
+    color: "hsl(var(--chart-5))",
+  },
+  "quality check": {
+    label: "Quality Check",
+    color: "hsl(var(--chart-2))",
+  },
+  completed: {
+    label: "Completed",
+    color: "hsl(var(--muted))",
+  },
+  cancelled: {
+    label: "Cancelled",
+    color: "hsl(var(--destructive))",
+  }
+} satisfies ChartConfig;
 
 
 export default function AnalyticsPage() {
+
+  const totalTickets = useMemo(() => {
+    return ticketStatusData.reduce((acc, curr) => acc + curr.value, 0)
+  }, []);
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <AdminHeader title="Analytics" />
@@ -125,56 +161,53 @@ export default function AnalyticsPage() {
                     <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `Ksh${Number(value) / 1000}k`} />
                     <Tooltip
                         cursor={{stroke: 'hsl(var(--chart-1))', strokeWidth: 1, fill: 'hsl(var(--muted))', fillOpacity: 0.5}}
-                        contentStyle={{
-                        backgroundColor: "hsl(var(--background))",
-                        borderColor: "hsl(var(--border))",
-                        borderRadius: "var(--radius)",
-                        }}
-                        formatter={(value: number) => [`Ksh ${value.toLocaleString()}`, "Revenue"]}
+                        content={<ChartTooltipContent formatter={(value: number) => [`Ksh ${value.toLocaleString()}`, "Revenue"]} />}
                     />
                     <Area type="monotone" dataKey="revenue" stroke="hsl(var(--chart-1))" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
                     </AreaChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
-          <Card className="lg:col-span-3">
+          <Card className="lg:col-span-3 flex flex-col">
             <CardHeader>
               <CardTitle>Ticket Status Distribution</CardTitle>
                <CardDescription>A snapshot of the current status across all repair tickets.</CardDescription>
             </CardHeader>
-            <CardContent>
-               <ResponsiveContainer width="100%" height={350}>
-                <PieChart>
-                  <Pie
-                    data={ticketStatusData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={120}
-                    innerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                    label={({ name, percent }) => (
-                      `${name} ${(percent * 100).toFixed(0)}%`
-                    )}
-                  >
-                    {ticketStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="hsl(var(--background))" />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    cursor={{fill: 'hsl(var(--muted))'}}
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--background))",
-                      borderColor: "hsl(var(--border))",
-                      borderRadius: "var(--radius)",
-                    }}
-                    formatter={(value, name) => [value, name.charAt(0).toUpperCase() + name.slice(1)]}
-                  />
-                  <Legend/>
-                </PieChart>
-              </ResponsiveContainer>
+            <CardContent className="flex-1 pb-0">
+               <ChartContainer
+                config={chartConfig}
+                className="mx-auto aspect-square h-full"
+              >
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Tooltip
+                      cursor={false}
+                      content={<ChartTooltipContent hideLabel />}
+                    />
+                    <Pie
+                      data={ticketStatusData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={60}
+                      strokeWidth={5}
+                    >
+                       {ticketStatusData.map((entry) => (
+                        <Cell key={entry.name} fill={chartConfig[entry.name as keyof typeof chartConfig]?.color} />
+                      ))}
+                    </Pie>
+                     <ChartLegend
+                      content={<ChartLegendContent nameKey="name" />}
+                      className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartContainer>
             </CardContent>
+             <CardFooter className="flex-col gap-2 text-sm mt-4">
+              <div className="flex items-center gap-2 font-medium leading-none">
+                Total tickets: {totalTickets}
+              </div>
+            </CardFooter>
           </Card>
         </div>
       </main>
