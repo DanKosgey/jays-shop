@@ -11,12 +11,21 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { mockProducts } from "@/lib/mock-data";
 import { Product } from "@/lib/types";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, Suspense, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 
-export default function HomePage() {
+function HomePageContent() {
   const router = useRouter();
-  const [ticketNumber, setTicketNumber] = useState('RPR-2025-0001');
+  const searchParams = useSearchParams();
+  const [ticketNumber, setTicketNumber] = useState(searchParams.get('ticketNumber') || 'RPR-2025-0001');
   const heroImage = PlaceHolderImages.find(p => p.id === 'hero-repair');
+
+  useEffect(() => {
+    const ticketFromUrl = searchParams.get('ticketNumber');
+    if (ticketFromUrl) {
+      setTicketNumber(ticketFromUrl);
+    }
+  }, [searchParams]);
 
   const handleTrackSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -167,7 +176,7 @@ export default function HomePage() {
        {/* Why Choose Us Section */}
       <section className="py-16 bg-background">
         <div className="container max-w-7xl px-4 text-center">
-          <h2 className="text-3xl font-headline font-bold mb-12">Why Choose Jays phone repair shop?</h2>
+          <h2 className="text-3xl font-headline font-bold mb-12">Why Choose Jay's phone repair shop?</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {whyChooseUs.map((feature, index) => (
               <div key={index} className="flex flex-col items-center gap-4">
@@ -181,4 +190,12 @@ export default function HomePage() {
       </section>
     </div>
   );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <HomePageContent />
+    </Suspense>
+  )
 }

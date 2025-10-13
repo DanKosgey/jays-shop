@@ -215,7 +215,7 @@ export const mockSecondHandProducts: SecondHandProduct[] = [
         imageHint: 'used tv',
         isFeatured: false,
         condition: 'Like New',
-        sellerName: 'Jays phone repair shop',
+        sellerName: 'Jay\'s phone repair shop',
     },
      {
         id: 'sh-prod-3',

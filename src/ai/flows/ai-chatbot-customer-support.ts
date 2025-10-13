@@ -143,7 +143,7 @@ const bookAppointment = ai.defineTool(
     },
     async ({ customerName, date, time }) => {
         // In a real app, this would save to a database.
-        return `Appointment confirmed for ${customerName} on ${date} at ${time}. We look forward to seeing you at Jays phone repair shop!`;
+        return `Appointment confirmed for ${customerName} on ${date} at ${time}. We look forward to seeing you at Jay's phone repair shop!`;
     }
 );
 
@@ -172,7 +172,7 @@ const shopInformation = `
     - Contact: (123) 456-7890
 `;
 
-const systemPrompt = `You are a helpful AI assistant for Jays phone repair shop. 
+const systemPrompt = `You are a helpful AI assistant for Jay's phone repair shop. 
 
 Your capabilities:
 - Help customers track their repair status using the getRepairTicketStatus tool.

@@ -36,7 +36,7 @@ export default function MarketplacePage() {
         {/* Header Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-headline font-bold mb-3">Second-Hand Marketplace</h1>
-          <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">Find great deals on pre-owned electronics, exclusively sold by Jays phone repair shop.</p>
+          <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">Find great deals on pre-owned electronics, exclusively sold by Jay's phone repair shop.</p>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8 xl:gap-12">

@@ -39,7 +39,7 @@ export default function SettingsPage() {
             <CardContent className="grid gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="shop-name">Shop Name</Label>
-                <Input id="shop-name" defaultValue="Jays phone repair shop" />
+                <Input id="shop-name" defaultValue="Jay's phone repair shop" />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="shop-address">Address</Label>
