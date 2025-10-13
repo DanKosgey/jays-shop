@@ -24,7 +24,7 @@ const statusInfo = {
 const statusOrder: RepairTicket['status'][] = ['received', 'diagnosing', 'awaiting_parts', 'repairing', 'quality_check', 'ready', 'completed'];
 
 export default function TrackPage() {
-  const [ticketNumber, setTicketNumber] = useState("");
+  const [ticketNumber, setTicketNumber] = useState("RPR-2025-0001");
   const [ticket, setTicket] = useState<RepairTicket | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
