@@ -10,7 +10,7 @@ import type { Product } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Search, ListFilter } from "lucide-react";
+import { Search, ListFilter, ArrowRight } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -139,8 +139,11 @@ export default function ShopPage() {
                     
                     <div className="flex items-center justify-between mt-auto">
                       <p className="text-2xl font-semibold text-accent">Ksh{product.price.toFixed(2)}</p>
-                      <Button asChild size="sm">
-                        <Link href={`/product/${product.slug}`}>View</Link>
+                      <Button asChild size="icon" className="relative group/button">
+                        <Link href={`/product/${product.slug}`}>
+                            <span className="group-hover/button:opacity-0 transition-opacity">View</span>
+                            <ArrowRight className="absolute h-4 w-4 opacity-0 group-hover/button:opacity-100 transition-opacity" />
+                        </Link>
                       </Button>
                     </div>
                   </CardContent>
