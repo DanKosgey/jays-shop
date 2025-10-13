@@ -7,6 +7,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription
 } from "@/components/ui/card";
 import {
   Table,
@@ -18,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, PlusCircle } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Search, Users, DollarSign, ShoppingCart } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,9 +27,20 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { mockTickets } from "@/lib/mock-data";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type Customer = {
     id: string;
@@ -44,7 +56,26 @@ const getInitials = (name: string) => {
       .split(" ")
       .map((n) => n[0])
       .join("");
-  };
+};
+
+function AddCustomerForm() {
+    return (
+        <form className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="customer-name" className="text-right">Name</Label>
+                <Input id="customer-name" placeholder="e.g., John Doe" className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="customer-email" className="text-right">Email</Label>
+                <Input id="customer-email" type="email" placeholder="e.g., john.d@example.com" className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="customer-phone" className="text-right">Phone</Label>
+                <Input id="customer-phone" type="tel" placeholder="e.g., 555-0199" className="col-span-3" />
+            </div>
+        </form>
+    );
+}
 
 export default function CustomersPage() {
     const customers: Customer[] = useMemo(() => {
@@ -68,22 +99,84 @@ export default function CustomersPage() {
         return Array.from(customerMap.values());
     }, []);
 
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  
+  const totalCustomerCount = customers.length;
+  const totalRevenue = customers.reduce((acc, customer) => acc + customer.totalSpent, 0);
+  const avgRevenuePerCustomer = totalRevenue / totalCustomerCount;
+
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <AdminHeader title="Customers" />
       <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-        <div className="flex items-center">
-            <div className="ml-auto flex items-center gap-2">
-                <Button size="sm" className="h-8 gap-1">
-                    <PlusCircle className="h-3.5 w-3.5" />
-                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Add Customer</span>
-                </Button>
-            </div>
+        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalCustomerCount}</div>
+              <p className="text-xs text-muted-foreground">Unique customers in the system</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Customer Spending</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">Ksh{totalRevenue.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">Across all orders and repairs</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Avg. Revenue/Customer</CardTitle>
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">Ksh{avgRevenuePerCustomer.toFixed(2)}</div>
+              <p className="text-xs text-muted-foreground">Average lifetime value</p>
+            </CardContent>
+          </Card>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Customer List</CardTitle>
+             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                 <div>
+                    <CardTitle>Customer List</CardTitle>
+                    <CardDescription>Manage your customer database.</CardDescription>
+                </div>
+                <div className="ml-auto flex items-center gap-2">
+                    <div className="relative flex-1 max-w-xs">
+                        <Input placeholder="Search customers..." className="pl-10 h-10"/>
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
+                    </div>
+                     <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                        <DialogTrigger asChild>
+                            <Button size="sm" className="h-10 gap-1">
+                                <PlusCircle className="h-4 w-4" />
+                                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Add Customer</span>
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Add New Customer</DialogTitle>
+                                <DialogDescription>
+                                    Enter the details for the new customer.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <AddCustomerForm />
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+                                <Button onClick={() => setIsCreateOpen(false)}>Add Customer</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+            </div>
           </CardHeader>
           <CardContent>
             <Table>
