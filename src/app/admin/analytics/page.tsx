@@ -48,7 +48,13 @@ const ticketStatusData = mockTickets.reduce((acc, ticket) => {
     return acc;
 }, [] as { name: string, value: number }[]);
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d", "#ffc658"];
+const COLORS = [
+    "hsl(var(--chart-1))",
+    "hsl(var(--chart-2))",
+    "hsl(var(--chart-3))",
+    "hsl(var(--chart-4))",
+    "hsl(var(--chart-5))",
+];
 
 
 export default function AnalyticsPage() {
@@ -108,18 +114,18 @@ export default function AnalyticsPage() {
             <CardContent className="pl-2">
               <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `Ksh${Number(value) / 1000}k`} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `Ksh${Number(value) / 1000}k`} />
                   <Tooltip
+                    cursor={{fill: 'hsl(var(--muted))'}}
                     contentStyle={{
                       backgroundColor: "hsl(var(--background))",
                       borderColor: "hsl(var(--border))",
                     }}
                      formatter={(value) => [`Ksh ${Number(value).toLocaleString()}`, "Revenue"]}
                   />
-                  <Legend />
-                  <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="revenue" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -138,16 +144,33 @@ export default function AnalyticsPage() {
                     cy="50%"
                     labelLine={false}
                     outerRadius={120}
-                    fill="#8884d8"
+                    fill="hsl(var(--chart-2))"
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent, fill }) => (
+                      <text
+                        x={0}
+                        y={0}
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        fill={fill === 'hsl(var(--chart-1))' ? 'black' : 'white'}
+                        fontSize="12"
+                      >
+                        {`${name} ${(percent * 100).toFixed(0)}%`}
+                      </text>
+                    )}
                   >
                     {ticketStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="hsl(var(--background))" />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value, name) => [value, name.charAt(0).toUpperCase() + name.slice(1)]}/>
-                  <Legend />
+                  <Tooltip 
+                    cursor={{fill: 'hsl(var(--muted))'}}
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--background))",
+                      borderColor: "hsl(var(--border))",
+                    }}
+                    formatter={(value, name) => [value, name.charAt(0).toUpperCase() + name.slice(1)]}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
