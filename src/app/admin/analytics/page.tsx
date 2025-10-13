@@ -21,7 +21,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
 } from "recharts";
 import { Wrench, ShoppingCart, DollarSign, Users } from "lucide-react";
 import { mockTickets } from "@/lib/mock-data";
@@ -150,24 +149,42 @@ export default function AnalyticsPage() {
               <CardDescription>A visual breakdown of monthly revenue performance.</CardDescription>
             </CardHeader>
             <CardContent className="pl-2">
-                <ResponsiveContainer width="100%" height={350}>
-                    <AreaChart data={revenueData}>
-                    <defs>
-                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0.1}/>
-                        </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `Ksh${Number(value) / 1000}k`} />
-                    <Tooltip
-                        cursor={{stroke: 'hsl(var(--chart-1))', strokeWidth: 1, fill: 'hsl(var(--muted))', fillOpacity: 0.5}}
-                        content={<ChartTooltipContent formatter={(value: number) => [`Ksh ${value.toLocaleString()}`, "Revenue"]} />}
+              <ChartContainer config={chartConfig}>
+                <AreaChart
+                  accessibilityLayer
+                  data={revenueData}
+                  margin={{
+                    left: 12,
+                    right: 12,
+                  }}
+                >
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tickFormatter={(value) => value.slice(0, 3)}
+                  />
+                   <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tickFormatter={(value) => `Ksh${Number(value) / 1000}k`}
                     />
-                    <Area type="monotone" dataKey="revenue" stroke="hsl(var(--chart-1))" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
-                    </AreaChart>
-              </ResponsiveContainer>
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent indicator="dot" />}
+                  />
+                  <Area
+                    dataKey="revenue"
+                    type="natural"
+                    fill="var(--color-revenue, hsl(var(--chart-1)))"
+                    fillOpacity={0.4}
+                    stroke="var(--color-revenue, hsl(var(--chart-1)))"
+                  />
+                </AreaChart>
+              </ChartContainer>
             </CardContent>
           </Card>
           <Card className="lg:col-span-3 flex flex-col">
@@ -178,31 +195,27 @@ export default function AnalyticsPage() {
             <CardContent className="flex-1 pb-0">
                <ChartContainer
                 config={chartConfig}
-                className="mx-auto aspect-square h-full"
+                className="mx-auto aspect-square max-h-[300px]"
               >
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Tooltip
-                      cursor={false}
-                      content={<ChartTooltipContent hideLabel />}
-                    />
-                    <Pie
-                      data={ticketStatusData}
-                      dataKey="value"
-                      nameKey="name"
-                      innerRadius={60}
-                      strokeWidth={5}
-                    >
-                       {ticketStatusData.map((entry) => (
-                        <Cell key={entry.name} fill={chartConfig[entry.name as keyof typeof chartConfig]?.color} />
-                      ))}
-                    </Pie>
-                     <ChartLegend
-                      content={<ChartLegendContent nameKey="name" />}
-                      className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                <PieChart>
+                  <Tooltip
+                    content={<ChartTooltipContent nameKey="name" hideLabel />}
+                  />
+                  <Pie
+                    data={ticketStatusData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius="30%"
+                    strokeWidth={5}
+                  >
+                     {ticketStatusData.map((entry) => (
+                      <Cell key={entry.name} fill={chartConfig[entry.name as keyof typeof chartConfig]?.color} />
+                    ))}
+                  </Pie>
+                   <ChartLegend
+                    content={<ChartLegendContent nameKey="name" className="flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center" />}
+                  />
+                </PieChart>
               </ChartContainer>
             </CardContent>
              <CardFooter className="flex-col gap-2 text-sm mt-4">
