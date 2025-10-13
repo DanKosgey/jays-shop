@@ -18,14 +18,28 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, PlusCircle, File } from "lucide-react";
+import { MoreHorizontal, PlusCircle, File, Edit } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { mockTickets } from "@/lib/mock-data";
 import { RepairTicket } from "@/lib/types";
 import {
@@ -34,6 +48,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
+import { useState } from "react";
 
 const statusVariant: { [key in RepairTicket["status"]]: "default" | "secondary" | "destructive" | "outline" } = {
     received: "outline",
@@ -46,11 +61,76 @@ const statusVariant: { [key in RepairTicket["status"]]: "default" | "secondary" 
     cancelled: "destructive",
 }
 
+const statusOptions: RepairTicket["status"][] = ['received', 'diagnosing', 'awaiting_parts', 'repairing', 'quality_check', 'ready', 'completed', 'cancelled'];
+const priorityOptions: RepairTicket["priority"][] = ['low', 'normal', 'high', 'urgent'];
+
+function EditTicketForm({ ticket }: { ticket: RepairTicket }) {
+    return (
+        <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="customerName" className="text-right">Customer</Label>
+                <Input id="customerName" defaultValue={ticket.customerName} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="device" className="text-right">Device</Label>
+                <Input id="device" defaultValue={`${ticket.deviceBrand} ${ticket.deviceModel}`} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="issue" className="text-right">Issue</Label>
+                <Textarea id="issue" defaultValue={ticket.issueDescription} className="col-span-3" />
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="status" className="text-right">Status</Label>
+                 <Select defaultValue={ticket.status}>
+                    <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {statusOptions.map(status => (
+                            <SelectItem key={status} value={status} className="capitalize">{status.replace('_', ' ')}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="priority" className="text-right">Priority</Label>
+                 <Select defaultValue={ticket.priority}>
+                    <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {priorityOptions.map(priority => (
+                            <SelectItem key={priority} value={priority} className="capitalize">{priority}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="estimatedCost" className="text-right">Est. Cost</Label>
+                <Input id="estimatedCost" type="number" defaultValue={ticket.estimatedCost || ''} className="col-span-3" />
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="finalCost" className="text-right">Final Cost</Label>
+                <Input id="finalCost" type="number" defaultValue={ticket.finalCost || ''} className="col-span-3" />
+            </div>
+        </div>
+    )
+}
+
+
 export default function TicketsPage() {
-  const allTickets = mockTickets;
-  const activeTickets = mockTickets.filter(t => t.status !== 'completed' && t.status !== 'cancelled');
-  const completedTickets = mockTickets.filter(t => t.status === 'completed');
-  const cancelledTickets = mockTickets.filter(t => t.status === 'cancelled');
+  const [allTickets, setAllTickets] = useState(mockTickets);
+  const [selectedTicket, setSelectedTicket] = useState<RepairTicket | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  
+  const activeTickets = allTickets.filter(t => t.status !== 'completed' && t.status !== 'cancelled');
+  const completedTickets = allTickets.filter(t => t.status === 'completed');
+  const cancelledTickets = allTickets.filter(t => t.status === 'cancelled');
+
+  const handleEditClick = (ticket: RepairTicket) => {
+      setSelectedTicket(ticket);
+      setIsEditDialogOpen(true);
+  }
 
   const renderTicketTable = (tickets: RepairTicket[]) => (
      <Table>
@@ -90,8 +170,11 @@ export default function TicketsPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem>View Details</DropdownMenuItem>
-                    <DropdownMenuItem>Update Status</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleEditClick(ticket)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        View/Edit Details
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem>Print Label</DropdownMenuItem>
                     <DropdownMenuItem className="text-destructive">Cancel Ticket</DropdownMenuItem>
                   </DropdownMenuContent>
@@ -144,6 +227,24 @@ export default function TicketsPage() {
             </Card>
         </Tabs>
       </main>
+
+       {selectedTicket && (
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Edit Ticket: {selectedTicket.ticketNumber}</DialogTitle>
+                    <DialogDescription>
+                        Update the details and status of this repair ticket. Click save when you're done.
+                    </DialogDescription>
+                </DialogHeader>
+                <EditTicketForm ticket={selectedTicket} />
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+                    <Button type="submit" onClick={() => setIsEditDialogOpen(false)}>Save Changes</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
