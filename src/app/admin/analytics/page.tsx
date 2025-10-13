@@ -47,10 +47,14 @@ const ticketStatusData = mockTickets.reduce((acc, ticket) => {
         acc.push({ name: status, value: 1 });
     }
     return acc;
-}, [] as { name: string, value: number }[]);
+}, [] as { name: string, value: number }[]).filter(d => d.name !== 'completed' && d.name !== 'cancelled');
 
 
 const chartConfig = {
+  revenue: {
+    label: "Revenue",
+    color: "hsl(var(--chart-1))",
+  },
   tickets: {
     label: "Tickets",
   },
@@ -80,7 +84,7 @@ const chartConfig = {
   },
   completed: {
     label: "Completed",
-    color: "hsl(var(--muted))",
+    color: "hsl(var(--chart-3))",
   },
   cancelled: {
     label: "Cancelled",
@@ -189,8 +193,8 @@ export default function AnalyticsPage() {
           </Card>
           <Card className="lg:col-span-3 flex flex-col">
             <CardHeader>
-              <CardTitle>Ticket Status Distribution</CardTitle>
-               <CardDescription>A snapshot of the current status across all repair tickets.</CardDescription>
+              <CardTitle>Active Ticket Status</CardTitle>
+               <CardDescription>A snapshot of the current status across all active repair tickets.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 pb-0">
                <ChartContainer
@@ -205,11 +209,12 @@ export default function AnalyticsPage() {
                     data={ticketStatusData}
                     dataKey="value"
                     nameKey="name"
-                    innerRadius="30%"
+                    innerRadius="40%"
                     strokeWidth={5}
+                    outerRadius="100%"
                   >
                      {ticketStatusData.map((entry) => (
-                      <Cell key={entry.name} fill={chartConfig[entry.name as keyof typeof chartConfig]?.color} />
+                      <Cell key={entry.name} fill={chartConfig[entry.name as keyof typeof chartConfig]?.color} className="outline-none" />
                     ))}
                   </Pie>
                    <ChartLegend
@@ -220,7 +225,7 @@ export default function AnalyticsPage() {
             </CardContent>
              <CardFooter className="flex-col gap-2 text-sm mt-4">
               <div className="flex items-center gap-2 font-medium leading-none">
-                Total tickets: {totalTickets}
+                Total active tickets: {totalTickets}
               </div>
             </CardFooter>
           </Card>
