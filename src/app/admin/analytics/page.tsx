@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { AdminHeader } from "../components/header";
@@ -29,13 +30,13 @@ import { useMemo } from "react";
 import type { ChartConfig } from "@/components/ui/chart";
 
 const revenueData = [
-  { name: "Jan", revenue: 400000 },
-  { name: "Feb", revenue: 300000 },
-  { name: "Mar", revenue: 500000 },
-  { name: "Apr", revenue: 450000 },
-  { name: "May", revenue: 600000 },
-  { name: "Jun", revenue: 550000 },
-  { name: "Jul", revenue: 700000 },
+  { month: "Jan", repair: 250000, order: 150000 },
+  { month: "Feb", repair: 180000, order: 120000 },
+  { month: "Mar", repair: 320000, order: 180000 },
+  { month: "Apr", repair: 280000, order: 170000 },
+  { month: "May", repair: 380000, order: 220000 },
+  { month: "Jun", repair: 330000, order: 220000 },
+  { month: "Jul", repair: 450000, order: 250000 },
 ];
 
 const ticketStatusData = mockTickets.reduce((acc, ticket) => {
@@ -51,9 +52,13 @@ const ticketStatusData = mockTickets.reduce((acc, ticket) => {
 
 
 const chartConfig = {
-  revenue: {
-    label: "Revenue",
+  repair: {
+    label: "Repair Revenue",
     color: "hsl(var(--chart-1))",
+  },
+  order: {
+    label: "Order Revenue",
+    color: "hsl(var(--chart-2))",
   },
   tickets: {
     label: "Tickets",
@@ -80,16 +85,8 @@ const chartConfig = {
   },
   "quality check": {
     label: "Quality Check",
-    color: "hsl(var(--chart-2))",
+    color: "hsl(var(--chart-3))",
   },
-  completed: {
-    label: "Completed",
-    color: "hsl(var(--muted-foreground))",
-  },
-  cancelled: {
-    label: "Cancelled",
-    color: "hsl(var(--destructive))",
-  }
 } satisfies ChartConfig;
 
 
@@ -97,6 +94,10 @@ export default function AnalyticsPage() {
 
   const totalTickets = useMemo(() => {
     return ticketStatusData.reduce((acc, curr) => acc + curr.value, 0)
+  }, []);
+
+  const totalRevenue = useMemo(() => {
+    return revenueData.reduce((acc, curr) => acc + curr.repair + curr.order, 0);
   }, []);
 
   return (
@@ -110,7 +111,7 @@ export default function AnalyticsPage() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Ksh 4,523,189</div>
+              <div className="text-2xl font-bold">Ksh{totalRevenue.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">+20.1% from last month</p>
             </CardContent>
           </Card>
@@ -149,8 +150,8 @@ export default function AnalyticsPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
           <Card className="lg:col-span-4">
             <CardHeader>
-              <CardTitle>Revenue Overview</CardTitle>
-              <CardDescription>A visual breakdown of monthly revenue performance.</CardDescription>
+              <CardTitle>Revenue Breakdown</CardTitle>
+              <CardDescription>A visual breakdown of monthly revenue from repairs and orders.</CardDescription>
             </CardHeader>
             <CardContent className="pl-2">
               <ChartContainer config={chartConfig}>
@@ -164,7 +165,7 @@ export default function AnalyticsPage() {
                 >
                   <CartesianGrid vertical={false} />
                   <XAxis
-                    dataKey="name"
+                    dataKey="month"
                     tickLine={false}
                     axisLine={false}
                     tickMargin={8}
@@ -181,12 +182,22 @@ export default function AnalyticsPage() {
                     content={<ChartTooltipContent indicator="dot" />}
                   />
                   <Area
-                    dataKey="revenue"
+                    dataKey="order"
                     type="natural"
-                    fill="var(--color-revenue, hsl(var(--chart-1)))"
+                    fill="var(--color-order)"
                     fillOpacity={0.4}
-                    stroke="var(--color-revenue, hsl(var(--chart-1)))"
+                    stroke="var(--color-order)"
+                    stackId="a"
                   />
+                   <Area
+                    dataKey="repair"
+                    type="natural"
+                    fill="var(--color-repair)"
+                    fillOpacity={0.4}
+                    stroke="var(--color-repair)"
+                    stackId="a"
+                  />
+                   <ChartLegend content={<ChartLegendContent />} />
                 </AreaChart>
               </ChartContainer>
             </CardContent>
