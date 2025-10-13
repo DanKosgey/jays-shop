@@ -14,6 +14,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge";
 import {
   AreaChart,
@@ -202,81 +208,91 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-8">
-           <Card>
-            <CardHeader>
-              <CardTitle>Recent Tickets</CardTitle>
-              <CardDescription>An overview of the latest repair tickets.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Device</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Est. Cost</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentTickets.map((ticket) => (
-                    <TableRow key={ticket.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                           <Avatar className="hidden h-9 w-9 sm:flex">
-                                <AvatarImage src={`https://i.pravatar.cc/150?u=${ticket.customerName}`} alt={ticket.customerName} />
-                                <AvatarFallback>{getInitials(ticket.customerName)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <div className="font-medium">{ticket.customerName}</div>
-                                <div className="text-sm text-muted-foreground">{ticket.ticketNumber}</div>
-                            </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{ticket.deviceModel}</TableCell>
-                      <TableCell>
-                        <Badge variant={statusVariant[ticket.status]} className="capitalize">
-                          {ticket.status.replace("_", " ")}
-                        </Badge>
-                      </TableCell>
-                       <TableCell className="text-right">
-                        {ticket.estimatedCost ? `Ksh${ticket.estimatedCost.toFixed(2)}` : 'N/A'}
-                      </TableCell>
+        <Tabs defaultValue="recent_tickets">
+          <TabsList>
+            <TabsTrigger value="recent_tickets">Recent Tickets</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications & Alerts</TabsTrigger>
+          </TabsList>
+          <TabsContent value="recent_tickets">
+             <Card>
+              <CardHeader>
+                <CardTitle>Recent Tickets</CardTitle>
+                <CardDescription>An overview of the latest repair tickets.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Device</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Est. Cost</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Notifications &amp; Alerts</CardTitle>
-              <CardDescription>Actionable insights and reminders.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {overdueTickets.length > 0 ? (
-                  overdueTickets.map((ticket) => (
-                    <div key={ticket.id} className="flex items-start gap-4">
-                      <div className="bg-destructive/10 text-destructive p-2 rounded-full">
-                        <AlertTriangle className="h-5 w-5" />
+                  </TableHeader>
+                  <TableBody>
+                    {recentTickets.map((ticket) => (
+                      <TableRow key={ticket.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="hidden h-9 w-9 sm:flex">
+                                  <AvatarImage src={`https://i.pravatar.cc/150?u=${ticket.customerName}`} alt={ticket.customerName} />
+                                  <AvatarFallback>{getInitials(ticket.customerName)}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                  <div className="font-medium">{ticket.customerName}</div>
+                                  <div className="text-sm text-muted-foreground">{ticket.ticketNumber}</div>
+                              </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{ticket.deviceModel}</TableCell>
+                        <TableCell>
+                          <Badge variant={statusVariant[ticket.status]} className="capitalize">
+                            {ticket.status.replace("_", " ")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {ticket.estimatedCost ? `Ksh${ticket.estimatedCost.toFixed(2)}` : 'N/A'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="notifications">
+            <Card>
+              <CardHeader>
+                <CardTitle>Notifications &amp; Alerts</CardTitle>
+                <CardDescription>Actionable insights and reminders.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {overdueTickets.length > 0 ? (
+                    overdueTickets.map((ticket) => (
+                      <div key={ticket.id} className="flex items-start gap-4">
+                        <div className="bg-destructive/10 text-destructive p-2 rounded-full">
+                          <AlertTriangle className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">Overdue Ticket: {ticket.ticketNumber}</p>
+                          <p className="text-xs text-muted-foreground">
+                            For {ticket.customerName} has been open for {differenceInDays(new Date(), new Date(ticket.createdAt))} days.
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Overdue Ticket: {ticket.ticketNumber}</p>
-                        <p className="text-xs text-muted-foreground">
-                          For {ticket.customerName} has been open for {differenceInDays(new Date(), new Date(ticket.createdAt))} days.
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">No overdue tickets. Great job!</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No overdue tickets. Great job!</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
 }
+
+    
