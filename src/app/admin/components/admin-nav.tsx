@@ -13,14 +13,10 @@ import {
 } from "lucide-react";
 
 import {
-  Sidebar,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarGroup,
-  SidebarGroupLabel,
 } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -47,30 +43,32 @@ export function AdminNav() {
         <SidebarMenu className="flex-1 p-2">
             {navItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Link href={item.href} legacyBehavior passHref>
-                  <SidebarMenuButton
-                    isActive={isActive(item.href)}
-                    tooltip={item.label}
-                  >
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive(item.href)}
+                  tooltip={item.label}
+                >
+                  <Link href={item.href}>
                     <item.icon />
                     <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </Link>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
         </SidebarMenu>
 
         <SidebarMenu className="p-2 mt-auto">
              <SidebarMenuItem>
-                <Link href={settingsItem.href} legacyBehavior passHref>
-                  <SidebarMenuButton
-                    isActive={isActive(settingsItem.href)}
-                    tooltip={settingsItem.label}
-                  >
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive(settingsItem.href)}
+                  tooltip={settingsItem.label}
+                >
+                  <Link href={settingsItem.href}>
                     <settingsItem.icon />
                     <span>{settingsItem.label}</span>
-                  </SidebarMenuButton>
-                </Link>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
         </SidebarMenu>
       </div>
