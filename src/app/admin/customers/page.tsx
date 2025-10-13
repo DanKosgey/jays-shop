@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { AdminHeader } from "../components/header";
@@ -37,7 +38,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { mockTickets } from "@/lib/mock-data";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -78,7 +79,10 @@ function AddCustomerForm() {
 }
 
 export default function CustomersPage() {
-    const customers: Customer[] = useMemo(() => {
+    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+    useEffect(() => {
         const customerMap = new Map<string, Customer>();
         mockTickets.forEach(ticket => {
             let customer = customerMap.get(ticket.customerId);
@@ -96,14 +100,12 @@ export default function CustomersPage() {
             customer.totalSpent += ticket.finalCost || ticket.estimatedCost || 0;
             customerMap.set(ticket.customerId, customer);
         });
-        return Array.from(customerMap.values());
+        setCustomers(Array.from(customerMap.values()));
     }, []);
-
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
   
   const totalCustomerCount = customers.length;
   const totalRevenue = customers.reduce((acc, customer) => acc + customer.totalSpent, 0);
-  const avgRevenuePerCustomer = totalRevenue / totalCustomerCount;
+  const avgRevenuePerCustomer = customers.length > 0 ? totalRevenue / totalCustomerCount : 0;
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
