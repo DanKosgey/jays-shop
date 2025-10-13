@@ -257,6 +257,7 @@ export default function ProductsPage() {
                             height="64"
                             src={product.imageUrl}
                             width="64"
+                            data-ai-hint={product.imageHint}
                           />
                         </TableCell>
                         <TableCell className="font-medium">{product.name}</TableCell>
@@ -317,6 +318,7 @@ export default function ProductsPage() {
                             height="64"
                             src={product.imageUrl}
                             width="64"
+                            data-ai-hint={product.imageHint}
                           />
                         </TableCell>
                         <TableCell className="font-medium">{product.name}</TableCell>
