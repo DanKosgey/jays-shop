@@ -1,3 +1,76 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-repair",
+      "description": "A technician repairing a smartphone on a clean, modern workbench.",
+      "imageUrl": "https://picsum.photos/seed/1/1200/800",
+      "imageHint": "phone repair"
+    },
+    {
+      "id": "how-it-works-1",
+      "description": "A customer submitting a repair ticket online.",
+      "imageUrl": "https://picsum.photos/seed/2/500/500",
+      "imageHint": "person computer"
+    },
+    {
+      "id": "how-it-works-2",
+      "description": "A phone being diagnosed by a technician.",
+      "imageUrl": "https://picsum.photos/seed/3/500/500",
+      "imageHint": "phone diagnosis"
+    },
+    {
+      "id": "how-it-works-3",
+      "description": "A happy customer receiving their repaired phone.",
+      "imageUrl": "https://picsum.photos/seed/4/500/500",
+      "imageHint": "happy customer"
+    },
+    {
+      "id": "product-case",
+      "description": "A durable phone case.",
+      "imageUrl": "https://picsum.photos/seed/101/400/400",
+      "imageHint": "phone case"
+    },
+    {
+      "id": "product-charger",
+      "description": "A fast-charging wall adapter and cable.",
+      "imageUrl": "https://picsum.photos/seed/102/400/400",
+      "imageHint": "phone charger"
+    },
+    {
+      "id": "product-headphones",
+      "description": "Wireless bluetooth headphones.",
+      "imageUrl": "https://picsum.photos/seed/103/400/400",
+      "imageHint": "wireless headphones"
+    },
+    {
+      "id": "product-powerbank",
+      "description": "A portable power bank.",
+      "imageUrl": "https://picsum.photos/seed/104/400/400",
+      "imageHint": "power bank"
+    },
+    {
+      "id": "product-screen-protector",
+      "description": "A tempered glass screen protector.",
+      "imageUrl": "https://picsum.photos/seed/105/400/400",
+      "imageHint": "screen protector"
+    },
+    {
+      "id": "product-smartwatch",
+      "description": "A modern smartwatch.",
+      "imageUrl": "https://picsum.photos/seed/106/400/400",
+      "imageHint": "smartwatch"
+    },
+    {
+      "id": "ticket-photo-1",
+      "description": "Cracked screen of a smartphone.",
+      "imageUrl": "https://picsum.photos/seed/201/400/300",
+      "imageHint": "cracked screen"
+    },
+    {
+      "id": "ticket-photo-2",
+      "description": "Water damage indicator on a smartphone's internal component.",
+      "imageUrl": "https://picsum.photos/seed/202/400/300",
+      "imageHint": "water damage"
+    }
+  ]
 }
