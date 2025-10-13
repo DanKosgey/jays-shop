@@ -167,7 +167,7 @@ export default function HomePage() {
        {/* Why Choose Us Section */}
       <section className="py-16 bg-background">
         <div className="container max-w-7xl px-4 text-center">
-          <h2 className="text-3xl font-headline font-bold mb-12">Why Choose RepairHub?</h2>
+          <h2 className="text-3xl font-headline font-bold mb-12">Why Choose Jays phone repair shop?</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {whyChooseUs.map((feature, index) => (
               <div key={index} className="flex flex-col items-center gap-4">

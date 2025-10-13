@@ -39,7 +39,7 @@ export default function SettingsPage() {
             <CardContent className="grid gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="shop-name">Shop Name</Label>
-                <Input id="shop-name" defaultValue="RepairHub" />
+                <Input id="shop-name" defaultValue="Jays phone repair shop" />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="shop-address">Address</Label>
@@ -48,7 +48,7 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="shop-email">Email</Label>
-                  <Input id="shop-email" type="email" defaultValue="support@repairhub.com" />
+                  <Input id="shop-email" type="email" defaultValue="support@jaysphonerepair.com" />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="shop-phone">Phone</Label>
@@ -115,7 +115,7 @@ Guidelines:
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="admin-email">Email</Label>
-                <Input id="admin-email" type="email" defaultValue="admin@repairhub.com" />
+                <Input id="admin-email" type="email" defaultValue="admin@jaysphonerepair.com" />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="admin-password">New Password</Label>

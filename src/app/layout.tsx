@@ -3,8 +3,8 @@ import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'RepairHub - Your one-stop phone repair shop.',
-  description: 'Track repairs, get AI help, and shop for accessories at RepairHub.',
+  title: 'Jays phone repair shop - Your one-stop phone repair shop.',
+  description: 'Track repairs, get AI help, and shop for accessories at Jays phone repair shop.',
 };
 
 export default function RootLayout({

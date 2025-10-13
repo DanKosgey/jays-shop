@@ -9,7 +9,7 @@ export function Footer() {
           <div className="flex flex-col gap-4">
             <Link href="/" className="flex items-center gap-2 font-bold text-xl text-foreground">
               <Wrench className="h-6 w-6 text-accent" />
-              <span className="font-headline">RepairHub</span>
+              <span className="font-headline">Jays phone repair shop</span>
             </Link>
             <p className="text-sm">Your trusted partner for phone repairs and accessories.</p>
             <div className="flex gap-4 mt-2">
@@ -38,12 +38,12 @@ export function Footer() {
           <div>
             <h4 className="font-semibold text-foreground mb-4">Contact</h4>
             <p>123 Tech Street, Silicon Valley, CA 94000</p>
-            <p>Email: support@repairhub.com</p>
+            <p>Email: support@jaysphonerepair.com</p>
             <p>Phone: (123) 456-7890</p>
           </div>
         </div>
         <div className="mt-8 pt-8 border-t text-center text-sm">
-          <p>&copy; {new Date().getFullYear()} RepairHub. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Jays phone repair shop. All rights reserved.</p>
         </div>
       </div>
     </footer>
