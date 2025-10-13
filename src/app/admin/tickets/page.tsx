@@ -4,9 +4,6 @@ import { AdminHeader } from "../components/header";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription
 } from "@/components/ui/card";
 import {
   Table,
@@ -34,7 +31,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogTrigger
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -48,7 +44,9 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { differenceInDays } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const statusVariant: { [key in RepairTicket["status"]]: "default" | "secondary" | "destructive" | "outline" } = {
     received: "outline",
@@ -123,9 +121,13 @@ export default function TicketsPage() {
   const [selectedTicket, setSelectedTicket] = useState<RepairTicket | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
-  const activeTickets = allTickets.filter(t => t.status !== 'completed' && t.status !== 'cancelled');
-  const completedTickets = allTickets.filter(t => t.status === 'completed');
-  const cancelledTickets = allTickets.filter(t => t.status === 'cancelled');
+  const sortedTickets = useMemo(() => {
+    return [...allTickets].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }, [allTickets]);
+
+  const activeTickets = sortedTickets.filter(t => t.status !== 'completed' && t.status !== 'cancelled');
+  const completedTickets = sortedTickets.filter(t => t.status === 'completed');
+  const cancelledTickets = sortedTickets.filter(t => t.status === 'cancelled');
 
   const handleEditClick = (ticket: RepairTicket) => {
       setSelectedTicket(ticket);
@@ -138,7 +140,7 @@ export default function TicketsPage() {
           <TableRow>
             <TableHead>Ticket ID</TableHead>
             <TableHead>Customer</TableHead>
-            <TableHead>Device</TableHead>
+            <TableHead>Age (Days)</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Est. Cost</TableHead>
             <TableHead>
@@ -147,41 +149,50 @@ export default function TicketsPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {tickets.map((ticket) => (
-            <TableRow key={ticket.id}>
-              <TableCell className="font-medium">{ticket.ticketNumber}</TableCell>
-              <TableCell>{ticket.customerName}</TableCell>
-              <TableCell>{ticket.deviceBrand} {ticket.deviceModel}</TableCell>
-              <TableCell>
-                <Badge variant={statusVariant[ticket.status]} className="capitalize">
-                  {ticket.status.replace("_", " ")}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                {ticket.estimatedCost ? `Ksh${ticket.estimatedCost.toFixed(2)}` : 'N/A'}
-              </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button aria-haspopup="true" size="icon" variant="ghost">
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Toggle menu</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => handleEditClick(ticket)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        View/Edit Details
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>Print Label</DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive">Cancel Ticket</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          ))}
+          {tickets.map((ticket) => {
+            const ageInDays = differenceInDays(new Date(), new Date(ticket.createdAt));
+            const isOverdue = ageInDays > 7 && ticket.status !== 'completed' && ticket.status !== 'cancelled';
+
+            return (
+                <TableRow key={ticket.id} className={cn(isOverdue && "bg-destructive/10 hover:bg-destructive/20")}>
+                <TableCell className="font-medium">{ticket.ticketNumber}</TableCell>
+                <TableCell>{ticket.customerName}</TableCell>
+                <TableCell>
+                    <span className={cn("font-semibold", isOverdue ? "text-destructive" : "text-muted-foreground")}>
+                        {ageInDays}
+                    </span>
+                </TableCell>
+                <TableCell>
+                    <Badge variant={statusVariant[ticket.status]} className="capitalize">
+                    {ticket.status.replace("_", " ")}
+                    </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                    {ticket.estimatedCost ? `Ksh${ticket.estimatedCost.toFixed(2)}` : 'N/A'}
+                </TableCell>
+                <TableCell>
+                    <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Toggle menu</span>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleEditClick(ticket)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            View/Edit Details
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>Print Label</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive">Cancel Ticket</DropdownMenuItem>
+                    </DropdownMenuContent>
+                    </DropdownMenu>
+                </TableCell>
+                </TableRow>
+            )
+        })}
         </TableBody>
       </Table>
   )
@@ -221,7 +232,7 @@ export default function TicketsPage() {
                         {renderTicketTable(cancelledTickets)}
                     </TabsContent>
                     <TabsContent value="all">
-                        {renderTicketTable(allTickets)}
+                        {renderTicketTable(sortedTickets)}
                     </TabsContent>
                 </CardContent>
             </Card>
@@ -248,3 +259,5 @@ export default function TicketsPage() {
     </div>
   );
 }
+
+    

@@ -23,11 +23,12 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { Wrench, Ticket, DollarSign, Package, Users, ShoppingCart } from "lucide-react";
+import { Wrench, Ticket, DollarSign, Package, Users, ShoppingCart, AlertTriangle } from "lucide-react";
 import { AdminHeader } from "../components/header";
 import { mockTickets } from "@/lib/mock-data";
 import { RepairTicket } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { differenceInDays } from "date-fns";
 
 const chartData = [
   { name: "Jan", revenue: 400000 },
@@ -60,7 +61,14 @@ const recentActivity = [
 
 
 export default function DashboardPage() {
-  const recentTickets = mockTickets.slice(0, 5);
+  const recentTickets = [...mockTickets]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5);
+
+  const overdueTickets = mockTickets
+    .filter(ticket => ticket.status !== 'completed' && ticket.status !== 'cancelled')
+    .filter(ticket => differenceInDays(new Date(), new Date(ticket.createdAt)) > 7)
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   const getInitials = (name: string) => {
     return name
@@ -149,20 +157,28 @@ export default function DashboardPage() {
           </Card>
           <Card className="lg:col-span-3">
             <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>A log of the most recent activities in the store.</CardDescription>
+              <CardTitle>Notifications & Alerts</CardTitle>
+              <CardDescription>Actionable insights and reminders.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentActivity.map((activity, index) => (
-                    <div key={index} className="flex items-start gap-4">
-                       <div className="bg-muted p-2 rounded-full">{activity.icon}</div>
-                        <div className="flex-1">
-                            <p className="text-sm">{activity.description}</p>
-                            <p className="text-xs text-muted-foreground">{activity.time}</p>
-                        </div>
+                {overdueTickets.length > 0 ? (
+                  overdueTickets.map((ticket) => (
+                    <div key={ticket.id} className="flex items-start gap-4">
+                      <div className="bg-destructive/10 text-destructive p-2 rounded-full">
+                        <AlertTriangle className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Overdue Ticket: {ticket.ticketNumber}</p>
+                        <p className="text-xs text-muted-foreground">
+                          For {ticket.customerName} has been open for {differenceInDays(new Date(), new Date(ticket.createdAt))} days.
+                        </p>
+                      </div>
                     </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">No overdue tickets. Great job!</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -216,3 +232,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
