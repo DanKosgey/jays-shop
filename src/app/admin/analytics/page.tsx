@@ -24,7 +24,7 @@ import {
 } from "recharts";
 import { Wrench, ShoppingCart, DollarSign, Users } from "lucide-react";
 import { mockTickets } from "@/lib/mock-data";
-import { ChartTooltipContent, ChartContainer, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
+import { ChartTooltipContent, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip } from "@/components/ui/chart";
 import { useMemo } from "react";
 import type { ChartConfig } from "@/components/ui/chart";
 
@@ -198,7 +198,7 @@ export default function AnalyticsPage() {
                 className="mx-auto aspect-square max-h-[300px]"
               >
                 <PieChart>
-                  <Tooltip
+                  <ChartTooltip
                     content={<ChartTooltipContent nameKey="name" hideLabel />}
                   />
                   <Pie
