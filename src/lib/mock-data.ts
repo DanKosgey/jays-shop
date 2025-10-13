@@ -7,6 +7,17 @@ export const mockUser: User = {
   avatar: 'https://i.pravatar.cc/150?u=admin@jaysphonerepair.com',
 };
 
+// Get today's date
+const today = new Date();
+
+// Helper function to subtract days from a date
+const subtractDays = (date: Date, days: number) => {
+  const result = new Date(date);
+  result.setDate(result.getDate() - days);
+  return result;
+};
+
+
 export const mockTickets: RepairTicket[] = [
   {
     id: '1',
@@ -21,9 +32,9 @@ export const mockTickets: RepairTicket[] = [
     priority: 'high',
     estimatedCost: 18000.00,
     finalCost: null,
-    createdAt: '2024-07-20T10:00:00Z',
-    updatedAt: '2024-07-22T14:30:00Z',
-    estimatedCompletion: '2024-07-23T17:00:00Z',
+    createdAt: subtractDays(today, 10).toISOString(),
+    updatedAt: subtractDays(today, 1).toISOString(),
+    estimatedCompletion: new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: '2',
@@ -38,9 +49,9 @@ export const mockTickets: RepairTicket[] = [
     priority: 'normal',
     estimatedCost: 9500.00,
     finalCost: null,
-    createdAt: '2024-07-21T11:30:00Z',
-    updatedAt: '2024-07-22T09:00:00Z',
-    estimatedCompletion: '2024-07-24T12:00:00Z',
+    createdAt: subtractDays(today, 8).toISOString(),
+    updatedAt: subtractDays(today, 1).toISOString(),
+    estimatedCompletion: new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: '3',
@@ -55,9 +66,9 @@ export const mockTickets: RepairTicket[] = [
     priority: 'normal',
     estimatedCost: 12000.00,
     finalCost: null,
-    createdAt: '2024-07-22T09:00:00Z',
-    updatedAt: '2024-07-22T16:00:00Z',
-    estimatedCompletion: '2024-07-28T17:00:00Z',
+    createdAt: subtractDays(today, 6).toISOString(),
+    updatedAt: subtractDays(today, 1).toISOString(),
+    estimatedCompletion: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: '4',
@@ -72,8 +83,8 @@ export const mockTickets: RepairTicket[] = [
     priority: 'urgent',
     estimatedCost: null,
     finalCost: null,
-    createdAt: '2024-07-22T15:00:00Z',
-    updatedAt: '2024-07-22T15:00:00Z',
+    createdAt: subtractDays(today, 1).toISOString(),
+    updatedAt: subtractDays(today, 1).toISOString(),
     estimatedCompletion: null,
   },
     {
@@ -89,9 +100,9 @@ export const mockTickets: RepairTicket[] = [
     priority: 'low',
     estimatedCost: 8500.00,
     finalCost: 8500.00,
-    createdAt: '2024-07-18T16:00:00Z',
-    updatedAt: '2024-07-22T11:00:00Z',
-    estimatedCompletion: '2024-07-22T11:00:00Z',
+    createdAt: subtractDays(today, 15).toISOString(),
+    updatedAt: subtractDays(today, 2).toISOString(),
+    estimatedCompletion: subtractDays(today, 2).toISOString(),
   },
   {
     id: '6',
@@ -106,9 +117,9 @@ export const mockTickets: RepairTicket[] = [
     priority: 'high',
     estimatedCost: 45000.00,
     finalCost: null,
-    createdAt: '2024-07-19T13:00:00Z',
-    updatedAt: '2024-07-22T15:30:00Z',
-    estimatedCompletion: '2024-07-22T18:00:00Z',
+    createdAt: subtractDays(today, 12).toISOString(),
+    updatedAt: subtractDays(today, 0).toISOString(),
+    estimatedCompletion: new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(),
   },
 ];
 
@@ -215,7 +226,7 @@ export const mockSecondHandProducts: SecondHandProduct[] = [
         imageHint: 'used tv',
         isFeatured: false,
         condition: 'Like New',
-        sellerName: 'Jay\'s phone repair shop',
+        sellerName: "Jay's phone repair shop",
     },
      {
         id: 'sh-prod-3',
