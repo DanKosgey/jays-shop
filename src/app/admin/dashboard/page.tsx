@@ -23,12 +23,14 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { Wrench, Ticket, DollarSign, Package, Users, ShoppingCart, AlertTriangle } from "lucide-react";
+import { Wrench, Ticket, DollarSign, Package, Users, ShoppingCart, AlertTriangle, Eye } from "lucide-react";
 import { AdminHeader } from "../components/header";
 import { mockTickets } from "@/lib/mock-data";
 import { RepairTicket } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, formatDistanceToNow } from "date-fns";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 const chartData = [
   { name: "Jan", revenue: 400000 },
@@ -51,16 +53,38 @@ const statusVariant: { [key in RepairTicket["status"]]: "default" | "secondary" 
     cancelled: "destructive",
 }
 
-const recentActivity = [
-    { icon: <Ticket className="h-5 w-5 text-accent"/>, description: "New ticket #RPR-2025-0004 created for Diana Prince.", time: "5m ago" },
-    { icon: <ShoppingCart className="h-5 w-5 text-accent"/>, description: "Order #ORD-003 status changed to Shipped.", time: "30m ago" },
-    { icon: <Wrench className="h-5 w-5 text-accent"/>, description: "Repair for #RPR-2025-0001 is now complete.", time: "1h ago" },
-    { icon: <Users className="h-5 w-5 text-accent"/>, description: "New customer 'Charlie Brown' registered.", time: "2h ago" },
-    { icon: <Package className="h-5 w-5 text-accent"/>, description: "New product 'Volta-Charge 100W PD Station' was added.", time: "1d ago" },
+const initialActivity = [
+    { id: 1, icon: <Ticket className="h-5 w-5 text-accent"/>, description: "New ticket #RPR-2025-0004 created for Diana Prince.", time: new Date(Date.now() - 5 * 60 * 1000) },
+    { id: 2, icon: <ShoppingCart className="h-5 w-5 text-accent"/>, description: "Order #ORD-003 status changed to Shipped.", time: new Date(Date.now() - 30 * 60 * 1000) },
+    { id: 3, icon: <Wrench className="h-5 w-5 text-accent"/>, description: "Repair for #RPR-2025-0001 is now complete.", time: new Date(Date.now() - 60 * 60 * 1000) },
+    { id: 4, icon: <Users className="h-5 w-5 text-accent"/>, description: "New customer 'Charlie Brown' registered.", time: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+    { id: 5, icon: <Package className="h-5 w-5 text-accent"/>, description: "New product 'Volta-Charge 100W PD Station' was added.", time: new Date(Date.now() - 24 * 60 * 60 * 1000) },
 ];
 
 
 export default function DashboardPage() {
+  const [activity, setActivity] = useState(initialActivity);
+
+  useEffect(() => {
+    const handleTicketViewed = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        const { ticketNumber, customerName } = customEvent.detail;
+        const newActivity = {
+            id: Date.now(),
+            icon: <Eye className="h-5 w-5 text-accent"/>,
+            description: `Customer ${customerName} viewed ticket #${ticketNumber}.`,
+            time: new Date(),
+        };
+        setActivity(prev => [newActivity, ...prev].slice(0, 10)); // Keep last 10 activities
+    };
+
+    window.addEventListener('ticketViewed', handleTicketViewed);
+
+    return () => {
+        window.removeEventListener('ticketViewed', handleTicketViewed);
+    };
+  }, []);
+
   const recentTickets = [...mockTickets]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
@@ -157,33 +181,30 @@ export default function DashboardPage() {
           </Card>
           <Card className="lg:col-span-3">
             <CardHeader>
-              <CardTitle>Notifications & Alerts</CardTitle>
-              <CardDescription>Actionable insights and reminders.</CardDescription>
+              <CardTitle>Live Activity Feed</CardTitle>
+              <CardDescription>Real-time shop updates and customer interactions.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {overdueTickets.length > 0 ? (
-                  overdueTickets.map((ticket) => (
-                    <div key={ticket.id} className="flex items-start gap-4">
-                      <div className="bg-destructive/10 text-destructive p-2 rounded-full">
-                        <AlertTriangle className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Overdue Ticket: {ticket.ticketNumber}</p>
-                        <p className="text-xs text-muted-foreground">
-                          For {ticket.customerName} has been open for {differenceInDays(new Date(), new Date(ticket.createdAt))} days.
-                        </p>
-                      </div>
+                {activity.map((item) => (
+                  <div key={item.id} className="flex items-start gap-4 animate-in fade-in-0 duration-500">
+                    <div className="bg-accent/10 text-accent p-2 rounded-full">
+                      {item.icon}
                     </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">No overdue tickets. Great job!</p>
-                )}
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{item.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(item.time, { addSuffix: true })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
         </div>
-        <Card>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+           <Card className="lg:col-span-4">
             <CardHeader>
               <CardTitle>Recent Tickets</CardTitle>
               <CardDescription>An overview of the latest repair tickets.</CardDescription>
@@ -228,9 +249,35 @@ export default function DashboardPage() {
               </Table>
             </CardContent>
           </Card>
+          <Card className="lg:col-span-3">
+            <CardHeader>
+              <CardTitle>Notifications & Alerts</CardTitle>
+              <CardDescription>Actionable insights and reminders.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {overdueTickets.length > 0 ? (
+                  overdueTickets.map((ticket) => (
+                    <div key={ticket.id} className="flex items-start gap-4">
+                      <div className="bg-destructive/10 text-destructive p-2 rounded-full">
+                        <AlertTriangle className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Overdue Ticket: {ticket.ticketNumber}</p>
+                        <p className="text-xs text-muted-foreground">
+                          For {ticket.customerName} has been open for {differenceInDays(new Date(), new Date(ticket.createdAt))} days.
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">No overdue tickets. Great job!</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </main>
     </div>
   );
 }
-
-    

@@ -33,6 +33,16 @@ function TrackPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const dispatchTicketViewedEvent = (ticket: RepairTicket) => {
+    const event = new CustomEvent('ticketViewed', {
+      detail: {
+        ticketNumber: ticket.ticketNumber,
+        customerName: ticket.customerName,
+      }
+    });
+    window.dispatchEvent(event);
+  };
+
   const performSearch = (searchTicketNumber: string) => {
     setError(null);
     setTicket(null);
@@ -49,6 +59,7 @@ function TrackPageContent() {
 
         if (foundTicket) {
             setTicket(foundTicket);
+            dispatchTicketViewedEvent(foundTicket);
         } else {
             setError("No repair ticket found with that number. Please check and try again.");
         }
