@@ -89,7 +89,7 @@ function HomePageContent() {
         <div className="absolute inset-0 bg-gradient-to-b from-primary/50 to-primary" />
         <div className="relative z-10 container max-w-4xl px-4">
           <h1 className="text-4xl md:text-6xl font-headline font-bold mb-4 tracking-wider uppercase">
-            Future-Proof Your Tech
+            Welcome to Jay's: Your Device's Next Evolution.
           </h1>
           <p className="text-lg md:text-xl mb-8 text-primary-foreground/80">
             Advanced diagnostics, AI-assisted support, and premium device enhancements.
@@ -205,5 +205,3 @@ export default function HomePage() {
     </Suspense>
   )
 }
-
-    
