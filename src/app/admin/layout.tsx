@@ -1,4 +1,4 @@
-import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarInset, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sidebar";
 import { Wrench } from "lucide-react";
 import Link from "next/link";
 import { AdminNav } from "./components/admin-nav";
@@ -11,6 +11,10 @@ export default function AdminLayout({
   return (
     <SidebarProvider>
       <Sidebar>
+          <SheetHeader className="p-4 border-b group-data-[collapsible=icon]:hidden sm:hidden">
+            <SheetTitle>Jay's phone repair shop</SheetTitle>
+            <SheetDescription>Admin Panel Navigation</SheetDescription>
+          </SheetHeader>
         <div className="flex h-16 items-center justify-center border-b shrink-0">
           <Link href="/" className="flex items-center gap-2 font-bold text-lg text-sidebar-foreground group-data-[collapsible=icon]:hidden">
             <Wrench className="h-6 w-6 text-accent" />
