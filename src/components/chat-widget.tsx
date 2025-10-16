@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { aiChatbot } from "@/ai/flows/ai-chatbot-customer-support";
+// Use server endpoint instead of direct client import
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -66,10 +66,13 @@ export function ChatWidget() {
     setIsLoading(true);
 
     try {
-      const result = await aiChatbot({
-        message: input,
-        sessionId: sessionId.current,
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: input, sessionId: sessionId.current }),
       });
+      if (!res.ok) throw new Error(`Chat failed: ${res.status}`);
+      const result = await res.json();
       const assistantMessage: Message = {
         role: "assistant",
         content: result.message,

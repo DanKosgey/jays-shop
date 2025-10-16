@@ -29,8 +29,8 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
-import { mockProducts, mockSecondHandProducts } from "@/lib/mock-data";
 import { Product, SecondHandProduct } from "@/lib/types";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import {
   Dialog,
@@ -121,7 +121,39 @@ function AddSecondHandItemForm() {
 }
 
 export default function ProductsPage() {
-  const outOfStockCount = mockProducts.filter(p => p.stockQuantity === 0).length;
+  const [products, setProducts] = useState<Product[]>([] as any);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch('/api/products', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Failed to fetch products: ${res.status}`);
+        const json = await res.json();
+        const list: Product[] = json.products.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          slug: p.slug,
+          category: p.category,
+          description: p.description,
+          price: p.price,
+          stockQuantity: p.stock_quantity ?? p.stock ?? 0,
+          imageUrl: p.image_url,
+          imageHint: 'product image',
+          isFeatured: p.is_featured ?? false,
+        }));
+        setProducts(list);
+      } catch (e: any) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  const outOfStockCount = products.filter(p => (p.stockQuantity ?? 0) === 0).length;
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -134,7 +166,7 @@ export default function ProductsPage() {
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockProducts.length}</div>
+              <div className="text-2xl font-bold">{products.length}</div>
               <p className="text-xs text-muted-foreground">Unique items in inventory</p>
             </CardContent>
           </Card>
@@ -232,6 +264,8 @@ export default function ProductsPage() {
             </CardHeader>
             <CardContent className="p-0">
               <TabsContent value="new_products" className="mt-0">
+                {loading && <div className="p-6 text-sm text-muted-foreground">Loading products...</div>}
+                {error && <div className="p-6 text-sm text-destructive">{error}</div>}
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -248,7 +282,7 @@ export default function ProductsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockProducts.map((product) => (
+                    {products.map((product) => (
                       <TableRow key={product.id}>
                         <TableCell className="hidden sm:table-cell p-2">
                           <Image
@@ -266,8 +300,8 @@ export default function ProductsPage() {
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
                            <div className="flex items-center gap-2">
-                             <div className={cn("h-2.5 w-2.5 rounded-full", product.stockQuantity > 10 ? "bg-green-500" : product.stockQuantity > 0 ? "bg-yellow-500" : "bg-red-500")}></div>
-                             <span>{product.stockQuantity}</span>
+                             <div className={cn("h-2.5 w-2.5 rounded-full", (product.stockQuantity ?? 0) > 10 ? "bg-green-500" : (product.stockQuantity ?? 0) > 0 ? "bg-yellow-500" : "bg-red-500")}></div>
+                             <span>{product.stockQuantity ?? 0}</span>
                            </div>
                         </TableCell>
                         <TableCell className="text-right">Ksh{product.price.toFixed(2)}</TableCell>
@@ -309,7 +343,7 @@ export default function ProductsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockSecondHandProducts.map((product) => (
+                    {[] /* second-hand not yet migrated */.map((product: any) => (
                       <TableRow key={product.id}>
                         <TableCell className="hidden sm:table-cell p-2">
                           <Image

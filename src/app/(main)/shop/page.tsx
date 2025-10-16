@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { mockProducts } from "@/lib/mock-data";
 import type { Product } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,8 +24,41 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 
+import { useEffect, useState } from 'react';
+
 export default function ShopPage() {
-  const categories = [...new Set(mockProducts.map((p) => p.category))];
+  const [products, setProducts] = useState<Product[]>([] as any);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch('/api/products', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Failed to fetch products: ${res.status}`);
+        const json = await res.json();
+        setProducts(json.products.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          slug: p.slug,
+          category: p.category,
+          description: p.description,
+          price: p.price,
+          stockQuantity: p.stock_quantity ?? p.stock ?? 0,
+          imageUrl: p.image_url,
+          imageHint: 'product image',
+          isFeatured: p.is_featured ?? false,
+        })));
+      } catch (e: any) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  const categories = [...new Set(products.map((p) => p.category))].filter(Boolean) as string[];
 
   return (
     <div className="bg-background">
@@ -119,7 +151,9 @@ export default function ShopPage() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
-              {mockProducts.map((product: Product) => (
+              {loading && <div className="col-span-full text-center text-muted-foreground">Loading products...</div>}
+              {error && <div className="col-span-full text-center text-destructive">{error}</div>}
+              {!loading && !error && products.map((product: Product) => (
                 <Card key={product.id} className="overflow-hidden group flex flex-col border-border/60 hover:shadow-xl hover:border-accent transition-all duration-300">
                   <CardHeader className="p-0">
                     <div className="aspect-square overflow-hidden bg-muted">

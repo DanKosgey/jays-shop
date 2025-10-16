@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Smartphone, Wrench, ShieldCheck, Cpu, Shield, Zap } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { mockProducts } from "@/lib/mock-data";
 import { Product } from "@/lib/types";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useState, Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
@@ -52,7 +52,31 @@ function HomePageContent() {
     },
   ];
 
-  const featuredProducts = mockProducts.filter(p => p.isFeatured);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([] as any);
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const res = await fetch('/api/products', { cache: 'no-store' });
+        if (!res.ok) return;
+        const json = await res.json();
+        const list: Product[] = (json.products as any[]).map((p) => ({
+          id: p.id,
+          name: p.name,
+          slug: p.slug,
+          category: p.category,
+          description: p.description,
+          price: p.price,
+          stockQuantity: p.stock_quantity ?? p.stock ?? 0,
+          imageUrl: p.image_url,
+          imageHint: 'product image',
+          isFeatured: p.is_featured ?? false,
+        }));
+        setFeaturedProducts(list.filter((p) => p.isFeatured));
+      } catch {}
+    };
+    run();
+  }, []);
 
   const whyChooseUs = [
       {

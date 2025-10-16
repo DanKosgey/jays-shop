@@ -24,7 +24,7 @@ import {
   Cell,
 } from "recharts";
 import { Wrench, ShoppingCart, DollarSign, Users } from "lucide-react";
-import { mockTickets } from "@/lib/mock-data";
+import { useEffect, useState } from 'react';
 import { ChartTooltipContent, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip } from "@/components/ui/chart";
 import { useMemo } from "react";
 import type { ChartConfig } from "@/components/ui/chart";
@@ -39,16 +39,28 @@ const revenueData = [
   { month: "Jul", repair: 450000, order: 250000 },
 ];
 
-const ticketStatusData = mockTickets.reduce((acc, ticket) => {
-    const status = ticket.status.replace("_", " ");
-    const existing = acc.find(item => item.name === status);
-    if(existing) {
-        existing.value += 1;
-    } else {
-        acc.push({ name: status, value: 1 });
-    }
-    return acc;
-}, [] as { name: string, value: number }[]).filter(d => d.name !== 'completed' && d.name !== 'cancelled');
+function useTicketStatusData() {
+  const [data, setData] = useState<{ name: string; value: number }[]>([]);
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        const res = await fetch('/api/tickets', { cache: 'no-store' });
+        if (!res.ok) return;
+        const json = await res.json();
+        const counts = new Map<string, number>();
+        for (const t of json.tickets as any[]) {
+          const name = String(t.status).replace('_', ' ');
+          counts.set(name, (counts.get(name) ?? 0) + 1);
+        }
+        const arr = Array.from(counts.entries()).map(([name, value]) => ({ name, value }))
+          .filter((d) => d.name !== 'completed' && d.name !== 'cancelled');
+        setData(arr);
+      } catch {}
+    };
+    fetchTickets();
+  }, []);
+  return data;
+}
 
 
 const chartConfig = {
@@ -91,6 +103,7 @@ const chartConfig = {
 
 
 export default function AnalyticsPage() {
+  const ticketStatusData = useTicketStatusData();
 
   const totalTickets = useMemo(() => {
     return ticketStatusData.reduce((acc, curr) => acc + curr.value, 0)

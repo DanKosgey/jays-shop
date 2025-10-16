@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Search, Hourglass, CheckCircle, Wrench, Package, Microscope, ShieldQuestion, CircleDotDashed, XCircle, Loader2 } from "lucide-react";
-import { mockTickets } from "@/lib/mock-data";
 import type { RepairTicket } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
@@ -43,7 +42,7 @@ function TrackPageContent() {
     window.dispatchEvent(event);
   };
 
-  const performSearch = (searchTicketNumber: string) => {
+  const performSearch = async (searchTicketNumber: string) => {
     setError(null);
     setTicket(null);
     if (!searchTicketNumber.trim()) {
@@ -51,20 +50,40 @@ function TrackPageContent() {
         return;
     }
     setLoading(true);
-    // Simulating network request
-    setTimeout(() => {
-        const foundTicket = mockTickets.find(
-            (t) => t.ticketNumber.toLowerCase() === searchTicketNumber.toLowerCase().trim()
-        );
-
-        if (foundTicket) {
-            setTicket(foundTicket);
-            dispatchTicketViewedEvent(foundTicket);
-        } else {
-            setError("No repair ticket found with that number. Please check and try again.");
-        }
-        setLoading(false);
-    }, 1000);
+    try {
+      const res = await fetch(`/api/tickets?ticketNumber=${encodeURIComponent(searchTicketNumber)}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Failed to fetch ticket: ${res.status}`);
+      const json = await res.json();
+      const list: any[] = json.tickets ?? [];
+      if (list.length > 0) {
+        const t = list[0];
+        const normalized: RepairTicket = {
+          id: t.id,
+          ticketNumber: t.ticket_number,
+          customerId: t.user_id,
+          customerName: t.customer_name,
+          deviceType: t.device_type,
+          deviceBrand: t.device_brand,
+          deviceModel: t.device_model,
+          issueDescription: t.issue_description,
+          status: t.status,
+          priority: t.priority,
+          estimatedCost: t.estimated_cost,
+          finalCost: t.final_cost,
+          createdAt: t.created_at,
+          updatedAt: t.updated_at,
+          estimatedCompletion: t.estimated_completion,
+        };
+        setTicket(normalized);
+        dispatchTicketViewedEvent(normalized);
+      } else {
+        setError("No repair ticket found with that number. Please check and try again.");
+      }
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -77,7 +96,7 @@ function TrackPageContent() {
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
-    performSearch(ticketNumber);
+    void performSearch(ticketNumber);
   };
 
   const currentStatusIndex = ticket ? statusOrder.indexOf(ticket.status) : -1;
