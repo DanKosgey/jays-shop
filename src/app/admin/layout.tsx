@@ -3,12 +3,19 @@ import { SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet
 import { Wrench } from "lucide-react";
 import Link from "next/link";
 import { AdminNav } from "./components/admin-nav";
+import { getSupabaseServerClient } from "@/server/supabase/server";
+import { redirect } from "next/navigation";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = getSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    redirect('/');
+  }
   return (
     <SidebarProvider>
       <Sidebar>

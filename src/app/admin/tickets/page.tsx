@@ -42,7 +42,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { mockTickets } from "@/lib/mock-data";
 import { RepairTicket } from "@/lib/types";
 import {
   Tabs,
@@ -166,7 +165,9 @@ function CreateTicketForm() {
 
 
 export default function TicketsPage() {
-  const [allTickets, setAllTickets] = useState(mockTickets);
+  const [allTickets, setAllTickets] = useState<RepairTicket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<RepairTicket | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -174,6 +175,39 @@ export default function TicketsPage() {
   const sortedTickets = useMemo(() => {
     return [...allTickets].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }, [allTickets]);
+
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        const res = await fetch('/api/tickets', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Failed to fetch tickets: ${res.status}`);
+        const json = await res.json();
+        const tickets: RepairTicket[] = json.tickets.map((t: any) => ({
+          id: t.id,
+          ticketNumber: t.ticket_number,
+          customerId: t.user_id,
+          customerName: t.customer_name,
+          deviceType: t.device_type,
+          deviceBrand: t.device_brand,
+          deviceModel: t.device_model,
+          issueDescription: t.issue_description,
+          status: t.status,
+          priority: t.priority,
+          estimatedCost: t.estimated_cost,
+          finalCost: t.final_cost,
+          createdAt: t.created_at,
+          updatedAt: t.updated_at,
+          estimatedCompletion: t.estimated_completion,
+        }));
+        setAllTickets(tickets);
+      } catch (e: any) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTickets();
+  }, []);
 
   const activeTickets = sortedTickets.filter(t => t.status !== 'completed' && t.status !== 'cancelled');
   const completedTickets = sortedTickets.filter(t => t.status === 'completed');
@@ -385,6 +419,8 @@ export default function TicketsPage() {
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
+                    {loading && <div className="p-6 text-sm text-muted-foreground">Loading tickets...</div>}
+                    {error && <div className="p-6 text-sm text-destructive">{error}</div>}
                     <TabsContent value="active" className="m-0">
                         {renderTicketTable(activeTickets)}
                     </TabsContent>

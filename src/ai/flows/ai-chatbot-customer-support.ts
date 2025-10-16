@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { mockTickets, mockProducts } from '@/lib/mock-data';
+import { getSupabaseAdminClient } from '@/server/supabase/admin';
 import type { RepairTicket, Product } from '@/lib/types';
 
 
@@ -23,10 +23,33 @@ const getRepairTicketStatus = ai.defineTool(
         outputSchema: z.custom<RepairTicket>(),
     },
     async ({ ticketNumber }) => {
-        const ticket = mockTickets.find(t => t.ticketNumber.toLowerCase() === ticketNumber.toLowerCase());
-        if (!ticket) {
-            throw new Error('Ticket not found');
-        }
+        const supabase = getSupabaseAdminClient();
+        const { data, error } = await supabase
+            .from('tickets')
+            .select('*')
+            .eq('ticket_number', ticketNumber)
+            .limit(1)
+            .maybeSingle();
+        if (error) throw new Error(error.message);
+        if (!data) throw new Error('Ticket not found');
+        const t = data as any;
+        const ticket: RepairTicket = {
+            id: t.id,
+            ticketNumber: t.ticket_number,
+            customerId: t.user_id,
+            customerName: t.customer_name,
+            deviceType: t.device_type,
+            deviceBrand: t.device_brand,
+            deviceModel: t.device_model,
+            issueDescription: t.issue_description,
+            status: t.status,
+            priority: t.priority,
+            estimatedCost: t.estimated_cost === null ? null : Number(t.estimated_cost),
+            finalCost: t.final_cost === null ? null : Number(t.final_cost),
+            createdAt: t.created_at,
+            updatedAt: t.updated_at,
+            estimatedCompletion: t.estimated_completion,
+        };
         return ticket;
     }
 );
@@ -40,10 +63,29 @@ const getProductInfo = ai.defineTool(
         outputSchema: z.custom<Product>(),
     },
     async ({ productName }) => {
-        const product = mockProducts.find(p => p.name.toLowerCase().includes(productName.toLowerCase()));
-        if (!product) {
-            throw new Error('Product not found');
-        }
+        const supabase = getSupabaseAdminClient();
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .ilike('name', `%${productName}%`)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        if (error) throw new Error(error.message);
+        if (!data) throw new Error('Product not found');
+        const p = data as any;
+        const product: Product = {
+            id: p.id,
+            name: p.name,
+            slug: p.slug ?? p.id,
+            category: p.category ?? 'General',
+            description: p.description,
+            price: Number(p.price),
+            stockQuantity: p.stock_quantity ?? p.stock ?? 0,
+            imageUrl: p.image_url,
+            imageHint: 'product image',
+            isFeatured: !!p.is_featured,
+        };
         return product;
     }
 );

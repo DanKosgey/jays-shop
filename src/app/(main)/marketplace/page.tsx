@@ -4,8 +4,8 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { mockSecondHandProducts } from "@/lib/mock-data";
 import type { SecondHandProduct } from "@/lib/types";
+import { useEffect, useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -28,7 +28,16 @@ import { Separator } from "@/components/ui/separator";
 const conditions = ["Like New", "Good", "Fair"];
 
 export default function MarketplacePage() {
-  const categories = [...new Set(mockSecondHandProducts.map((p) => p.category))];
+  const [items, setItems] = useState<SecondHandProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Not yet backed by API - leave empty list for now
+    setLoading(false);
+  }, []);
+
+  const categories = [...new Set(items.map((p) => p.category))];
 
   return (
     <div className="bg-background">
@@ -148,7 +157,9 @@ export default function MarketplacePage() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
-              {mockSecondHandProducts.map((product: SecondHandProduct) => (
+              {loading && <div className="col-span-full text-center text-muted-foreground">Loading items...</div>}
+              {error && <div className="col-span-full text-center text-destructive">{error}</div>}
+              {!loading && !error && items.map((product: SecondHandProduct) => (
                 <Card key={product.id} className="overflow-hidden group flex flex-col border-border/60 hover:shadow-xl hover:border-accent transition-all duration-300">
                   <CardHeader className="p-0 relative">
                      <div className="absolute top-2 left-2 z-10">

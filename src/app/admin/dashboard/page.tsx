@@ -32,7 +32,7 @@ import {
 } from "recharts";
 import { Wrench, Ticket, DollarSign, Package, Users, ShoppingCart, AlertTriangle, Eye } from "lucide-react";
 import { AdminHeader } from "../components/header";
-import { mockTickets } from "@/lib/mock-data";
+import { useMemo } from "react";
 import { RepairTicket } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { differenceInDays } from "date-fns";
@@ -72,6 +72,9 @@ const initialActivity = [
 
 export default function DashboardPage() {
   const [activity, setActivity] = useState(initialActivity);
+  const [tickets, setTickets] = useState<RepairTicket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleTicketViewed = (event: Event) => {
@@ -93,11 +96,44 @@ export default function DashboardPage() {
     };
   }, []);
 
-  const recentTickets = [...mockTickets]
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const res = await fetch('/api/tickets', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Failed to fetch tickets: ${res.status}`);
+        const json = await res.json();
+        const list: RepairTicket[] = (json.tickets as any[]).map((t) => ({
+          id: t.id,
+          ticketNumber: t.ticket_number,
+          customerId: t.user_id,
+          customerName: t.customer_name,
+          deviceType: t.device_type,
+          deviceBrand: t.device_brand,
+          deviceModel: t.device_model,
+          issueDescription: t.issue_description,
+          status: t.status,
+          priority: t.priority,
+          estimatedCost: t.estimated_cost,
+          finalCost: t.final_cost,
+          createdAt: t.created_at,
+          updatedAt: t.updated_at,
+          estimatedCompletion: t.estimated_completion,
+        }));
+        setTickets(list);
+      } catch (e: any) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    run();
+  }, []);
+
+  const recentTickets = [...tickets]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
 
-  const overdueTickets = mockTickets
+  const overdueTickets = tickets
     .filter(ticket => ticket.status !== 'completed' && ticket.status !== 'cancelled')
     .filter(ticket => differenceInDays(new Date(), new Date(ticket.createdAt)) > 7)
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());

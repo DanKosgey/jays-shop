@@ -37,7 +37,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { mockTickets } from "@/lib/mock-data";
+import { useEffect } from "react";
 import { useMemo, useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -83,24 +83,32 @@ export default function CustomersPage() {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
 
     useEffect(() => {
-        const customerMap = new Map<string, Customer>();
-        mockTickets.forEach(ticket => {
-            let customer = customerMap.get(ticket.customerId);
-            if (!customer) {
-                customer = {
-                    id: ticket.customerId,
-                    name: ticket.customerName,
-                    email: `${ticket.customerName.toLowerCase().replace(' ', '.')}@example.com`,
-                    phone: `555-01${Math.floor(Math.random() * 90) + 10}`,
-                    totalTickets: 0,
-                    totalSpent: 0
+        const run = async () => {
+            const res = await fetch('/api/tickets', { cache: 'no-store' });
+            if (!res.ok) return;
+            const json = await res.json();
+            const customerMap = new Map<string, Customer>();
+            (json.tickets as any[]).forEach((t) => {
+                const customerId = t.user_id as string;
+                const customerName = t.customer_name as string;
+                let customer = customerMap.get(customerId);
+                if (!customer) {
+                    customer = {
+                        id: customerId,
+                        name: customerName,
+                        email: `${customerName.toLowerCase().replace(' ', '.')}@example.com`,
+                        phone: `555-01${Math.floor(Math.random() * 90) + 10}`,
+                        totalTickets: 0,
+                        totalSpent: 0,
+                    };
                 }
-            }
-            customer.totalTickets += 1;
-            customer.totalSpent += ticket.finalCost || ticket.estimatedCost || 0;
-            customerMap.set(ticket.customerId, customer);
-        });
-        setCustomers(Array.from(customerMap.values()));
+                customer.totalTickets += 1;
+                customer.totalSpent += (t.final_cost ?? t.estimated_cost ?? 0) as number;
+                customerMap.set(customerId, customer);
+            });
+            setCustomers(Array.from(customerMap.values()));
+        };
+        run();
     }, []);
   
   const totalCustomerCount = customers.length;
