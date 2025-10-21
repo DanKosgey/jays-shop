@@ -3,7 +3,22 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES 
   ('avatars', 'avatars', true),
   ('user-content', 'user-content', false),
-  ('public-assets', 'public-assets', true);
+  ('public-assets', 'public-assets', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can upload own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can view avatars" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can upload own content" ON storage.objects;
+DROP POLICY IF EXISTS "Users can view own content" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update own content" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete own content" ON storage.objects;
+DROP POLICY IF EXISTS "Admins can upload public assets" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can view public assets" ON storage.objects;
+DROP POLICY IF EXISTS "Admins can update public assets" ON storage.objects;
+DROP POLICY IF EXISTS "Admins can delete public assets" ON storage.objects;
 
 -- Storage policies for avatars bucket
 CREATE POLICY "Users can upload own avatar"

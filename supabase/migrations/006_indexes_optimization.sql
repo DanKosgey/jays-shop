@@ -1,7 +1,22 @@
 -- Additional indexes for optimization
 
+-- Drop existing indexes if they exist
+DROP INDEX IF EXISTS idx_tickets_status_priority;
+DROP INDEX IF EXISTS idx_tickets_created_updated;
+DROP INDEX IF EXISTS idx_products_category_featured;
+DROP INDEX IF EXISTS idx_products_price_category;
+DROP INDEX IF EXISTS idx_orders_status_date;
+DROP INDEX IF EXISTS idx_orders_user_date;
+DROP INDEX IF EXISTS idx_order_items_product_order;
+DROP INDEX IF EXISTS idx_customers_email_name;
+DROP INDEX IF EXISTS idx_customers_user_name;
+DROP INDEX IF EXISTS idx_tickets_active;
+DROP INDEX IF EXISTS idx_orders_active;
+DROP INDEX IF EXISTS idx_products_name_pattern;
+DROP INDEX IF EXISTS idx_customers_name_pattern;
+DROP INDEX IF EXISTS idx_tickets_customer_pattern;
+
 -- Composite indexes for tickets
--- CREATE INDEX idx_tickets_user_status ON public.tickets(user_id, status); -- Already exists
 CREATE INDEX idx_tickets_status_priority ON public.tickets(status, priority);
 CREATE INDEX idx_tickets_created_updated ON public.tickets(created_at, updated_at);
 
@@ -10,7 +25,6 @@ CREATE INDEX idx_products_category_featured ON public.products(category, is_feat
 CREATE INDEX idx_products_price_category ON public.products(price, category);
 
 -- Composite indexes for orders
--- CREATE INDEX idx_orders_user_status ON public.orders(user_id, status); -- Already exists
 CREATE INDEX idx_orders_status_date ON public.orders(status, created_at);
 CREATE INDEX idx_orders_user_date ON public.orders(user_id, created_at);
 
