@@ -153,28 +153,22 @@ export default function TicketsPage() {
     if (!ticketToDelete) return;
     
     try {
-      // For now, we'll update the ticket status to 'cancelled' instead of deleting
-      // This is safer and follows the existing data model
-      const response = await fetch('/api/tickets', {
-        method: 'PUT',
+      const response = await fetch(`/api/tickets/${ticketToDelete}`, {
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          id: ticketToDelete,
-          status: 'cancelled'
-        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to cancel ticket');
+        throw new Error(errorData.error || 'Failed to delete ticket');
       }
 
       // Refresh the data
       window.location.reload();
     } catch (err) {
-      console.error('Error cancelling ticket:', err);
+      console.error('Error deleting ticket:', err);
       // In a real app, we'd show an error message to the user
     } finally {
       setIsDeleteDialogOpen(false);
@@ -256,7 +250,7 @@ export default function TicketsPage() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(ticket.id)}>
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Cancel Ticket
+                      Delete Ticket
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -420,9 +414,9 @@ export default function TicketsPage() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cancel Ticket</DialogTitle>
+            <DialogTitle>Delete Ticket</DialogTitle>
             <DialogDescription>
-              Are you sure you want to cancel this ticket? This action will mark the ticket as cancelled.
+              Are you sure you want to delete this ticket? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -430,7 +424,7 @@ export default function TicketsPage() {
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleConfirmDelete}>
-              Confirm Cancel
+              Confirm Delete
             </Button>
           </DialogFooter>
         </DialogContent>

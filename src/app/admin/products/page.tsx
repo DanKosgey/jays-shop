@@ -58,7 +58,109 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MobileNav } from "../components/mobile-nav";
 import { PageLogger } from "../components/page-logger";
 
+function EditProductForm({ product, onUpdate }: { product: Product; onUpdate: (updatedProduct: any) => void }) {
+  const [name, setName] = useState(product.name);
+  const [category, setCategory] = useState(product.category);
+  const [price, setPrice] = useState(product.price.toString());
+  const [stock, setStock] = useState(product.stockQuantity?.toString() || '0');
+  const [description, setDescription] = useState(product.description);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Prepare data according to schema
+      const productData = {
+        id: product.id,
+        name,
+        category: category || null,
+        price: parseFloat(price),
+        stock_quantity: stock ? parseInt(stock) : 0,
+        description,
+      };
+
+      onUpdate(productData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="grid gap-4 py-4">
+        <div className="grid gap-2">
+          <Label htmlFor="edit-product-name">Product Name</Label>
+          <Input 
+            id="edit-product-name" 
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="edit-product-category">Category</Label>
+          <Input 
+            id="edit-product-category" 
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="edit-product-price">Price (Ksh)</Label>
+            <Input 
+              id="edit-product-price" 
+              type="number" 
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="edit-product-stock">Stock Quantity</Label>
+            <Input 
+              id="edit-product-stock" 
+              type="number" 
+              value={stock}
+              onChange={(e) => setStock(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="edit-product-description">Description</Label>
+          <Textarea 
+            id="edit-product-description" 
+            className="min-h-[100px]" 
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+          />
+        </div>
+        {error && <div className="text-sm text-destructive text-center">{error}</div>}
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => {
+            // Reset form to original values
+            setName(product.name);
+            setCategory(product.category);
+            setPrice(product.price.toString());
+            setStock(product.stockQuantity?.toString() || '0');
+            setDescription(product.description);
+          }}>
+            Reset
+          </Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </DialogFooter>
+      </div>
+    </form>
+  );
+}
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -69,6 +171,10 @@ export default function ProductsPage() {
   const [secondHandError, setSecondHandError] = useState<string | null>(null);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isAddSecondHandOpen, setIsAddSecondHandOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -116,6 +222,69 @@ export default function ProductsPage() {
   }, []);
 
   const outOfStockCount = products.filter(p => (p.stockQuantity ?? 0) === 0).length;
+
+  const handleDeleteProduct = (productId: string) => {
+    setProductToDelete(productId);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleEditProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!productToDelete) return;
+    
+    try {
+      const response = await fetch(`/api/products?id=${productToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete product');
+      }
+
+      // Refresh the data
+      window.location.reload();
+    } catch (err) {
+      console.error('Error deleting product:', err);
+      // In a real app, we'd show an error message to the user
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setProductToDelete(null);
+    }
+  };
+  
+  const handleUpdateProduct = async (updatedProduct: any) => {
+    try {
+      const response = await fetch('/api/products', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedProduct),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update product');
+      }
+
+      // Refresh the data
+      window.location.reload();
+    } catch (err) {
+      console.error('Error updating product:', err);
+      // In a real app, we'd show an error message to the user
+    } finally {
+      setIsEditDialogOpen(false);
+      setSelectedProduct(null);
+    }
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -300,7 +469,7 @@ export default function ProductsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditProduct(product)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
@@ -309,7 +478,7 @@ export default function ProductsPage() {
                             View
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteProduct(product.id)}>
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                           </DropdownMenuItem>
@@ -448,6 +617,41 @@ export default function ProductsPage() {
           </CardFooter>
         </Card>
       </main>
+      
+      {/* Edit Product Dialog */}
+      {selectedProduct && (
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[480px]">
+            <DialogHeader>
+              <DialogTitle>Edit Product</DialogTitle>
+              <DialogDescription>
+                Make changes to the product details.
+              </DialogDescription>
+            </DialogHeader>
+            <EditProductForm product={selectedProduct} onUpdate={handleUpdateProduct} />
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Product</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this product? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete}>
+              Confirm Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
