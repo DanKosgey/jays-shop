@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Wrench } from "lucide-react";
 import { Logo } from "./icons";
 
@@ -34,7 +34,7 @@ export function Header() {
 
         <div className="flex items-center gap-4">
           <Button asChild variant="ghost" className="hidden md:flex">
-            <Link href="/admin/dashboard">Admin Login</Link>
+            <Link href="/admin/login">Admin Login</Link>
           </Button>
 
           <Sheet>
@@ -45,6 +45,10 @@ export function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right">
+              <SheetHeader className="sr-only">
+                <SheetTitle>Navigation Menu</SheetTitle>
+                <SheetDescription>Menu for navigating the website</SheetDescription>
+              </SheetHeader>
               <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between border-b pb-4">
                   <Link href="/" className="flex items-center gap-2 font-bold text-lg">
@@ -65,7 +69,7 @@ export function Header() {
                 </nav>
                 <div className="mt-auto">
                     <Button asChild className="w-full">
-                        <Link href="/admin/dashboard">Admin Login</Link>
+                        <Link href="/admin/login">Admin Login</Link>
                     </Button>
                 </div>
               </div>

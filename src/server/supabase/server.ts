@@ -2,11 +2,33 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { getEnv } from '@/server/env';
 
-export function getSupabaseServerClient() {
-  const env = getEnv();
-  const cookieStore = cookies();
+export async function getSupabaseServerClient() {
+  let env;
+  try {
+    env = getEnv();
+  } catch (error) {
+    console.warn('Failed to get environment variables:', error);
+    // Use fallback values
+    env = {
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key',
+      SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-key',
+    };
+  }
+  
+  // Ensure we have valid strings for the Supabase client
+  const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321';
+  const supabaseKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+  
+  // Check if we have valid values
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('[SERVER_CLIENT] Missing Supabase configuration:', { supabaseUrl, supabaseKey });
+    throw new Error('Missing Supabase configuration for server client');
+  }
+  
+  const cookieStore = await cookies();
   // createServerClient uses cookie get/set to persist auth
-  const client = createServerClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+  const client = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
       get(name: string) {
         return cookieStore.get(name)?.value;

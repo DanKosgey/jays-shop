@@ -1,5 +1,5 @@
-
 "use client";
+
 import {
   Card,
   CardContent,
@@ -15,40 +15,57 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge";
 import {
   AreaChart,
   Area,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { Wrench, Ticket, DollarSign, Package, Users, ShoppingCart, AlertTriangle, Eye } from "lucide-react";
-import { AdminHeader } from "../components/header";
-import { useMemo } from "react";
-import { RepairTicket } from "@/lib/types";
+import { 
+  Wrench, 
+  Ticket, 
+  DollarSign, 
+  Package, 
+  Users, 
+  ShoppingCart, 
+  AlertTriangle, 
+  Eye,
+  Calendar,
+  Clock,
+  CheckCircle,
+  Menu
+} from "lucide-react";
+import { 
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { differenceInDays } from "date-fns";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { TimeAgo } from "../components/time-ago";
+import { RepairTicket } from "@/lib/types";
+import { fetchTickets } from "@/lib/data-fetching";
+import { transformTicketsData } from "@/lib/data-transform";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { MobileNav } from "../components/mobile-nav";
+// Import logging utilities
+import { logDashboardAccess, logDashboardExit } from "@/lib/admin-logging";
+import { getSupabaseBrowserClient } from "@/server/supabase/client";
 
-const chartData = [
-  { name: "Jan", revenue: 400000 },
-  { name: "Feb", revenue: 300000 },
-  { name: "Mar", revenue: 500000 },
-  { name: "Apr", revenue: 450000 },
-  { name: "May", revenue: 600000 },
-  { name: "Jun", revenue: 550000 },
-  { name: "Jul", revenue: 700000 },
-];
+// Define the activity item type
+type ActivityItem = {
+  id: number;
+  icon: React.ReactNode;
+  description: string;
+  time: Date;
+};
 
 const statusVariant: { [key in RepairTicket["status"]]: "default" | "secondary" | "destructive" | "outline" } = {
     received: "outline",
@@ -59,30 +76,52 @@ const statusVariant: { [key in RepairTicket["status"]]: "default" | "secondary" 
     ready: "outline",
     completed: "secondary",
     cancelled: "destructive",
-}
-
-const initialActivity = [
-    { id: 1, icon: <Ticket className="h-5 w-5 text-accent"/>, description: "New ticket #RPR-2025-0004 created for Diana Prince.", time: new Date(Date.now() - 5 * 60 * 1000) },
-    { id: 2, icon: <ShoppingCart className="h-5 w-5 text-accent"/>, description: "Order #ORD-003 status changed to Shipped.", time: new Date(Date.now() - 30 * 60 * 1000) },
-    { id: 3, icon: <Wrench className="h-5 w-5 text-accent"/>, description: "Repair for #RPR-2025-0001 is now complete.", time: new Date(Date.now() - 60 * 60 * 1000) },
-    { id: 4, icon: <Users className="h-5 w-5 text-accent"/>, description: "New customer 'Charlie Brown' registered.", time: new Date(Date.now() - 2 * 60 * 60 * 1000) },
-    { id: 5, icon: <Package className="h-5 w-5 text-accent"/>, description: "New product 'Volta-Charge 100W PD Station' was added.", time: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-];
-
+};
 
 export default function DashboardPage() {
-  const [activity, setActivity] = useState(initialActivity);
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [tickets, setTickets] = useState<RepairTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
+  // Add new state for dashboard metrics
+  const [metrics, setMetrics] = useState<any>(null);
+  const [chartData, setChartData] = useState<any[]>([]);
+
+  // Get user info and log dashboard access
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      const supabase = getSupabaseBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        setUserId(user.id);
+        setUserEmail(user.email);
+        // Log dashboard access
+        logDashboardAccess(user.id, user.email || "Unknown");
+      }
+    };
+    
+    fetchUserInfo();
+    
+    // Log dashboard exit when component unmounts
+    return () => {
+      if (userId && userEmail) {
+        logDashboardExit(userId, userEmail);
+      }
+    };
+  }, [userId, userEmail]);
+
+  // Handle ticket viewed events
   useEffect(() => {
     const handleTicketViewed = (event: Event) => {
         const customEvent = event as CustomEvent;
-        const { ticketNumber, customerName } = customEvent.detail;
+        const { ticketNumber, customerName } = customEvent.detail as { ticketNumber: string; customerName: string };
         const newActivity = {
             id: Date.now(),
-            icon: <Eye className="h-5 w-5 text-accent"/>,
+            icon: <Eye className="h-5 w-5 text-blue-500"/>,
             description: `Customer ${customerName} viewed ticket #${ticketNumber}.`,
             time: new Date(),
         };
@@ -96,37 +135,234 @@ export default function DashboardPage() {
     };
   }, []);
 
+  // Subscribe to real-time events from Supabase
   useEffect(() => {
-    const run = async () => {
+    const supabase = getSupabaseBrowserClient();
+    
+    // Check if we're in a browser environment and realtime is enabled
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
+    try {
+      // Subscribe to tickets table changes
+      const ticketsSubscription = supabase
+        .channel('tickets-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'tickets',
+          },
+          (payload: any) => {
+            const newTicket = payload.new;
+            const newActivity = {
+              id: Date.now(),
+              icon: <Ticket className="h-5 w-5 text-blue-500"/>,
+              description: `New ticket #${newTicket.ticket_number} created for ${newTicket.customer_name}.`,
+              time: new Date(newTicket.created_at),
+            };
+            setActivity(prev => [newActivity, ...prev].slice(0, 10));
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'tickets',
+          },
+          (payload: any) => {
+            const updatedTicket = payload.new;
+            let description = '';
+            let icon = <Wrench className="h-5 w-5 text-purple-500"/>;
+            
+            if (updatedTicket.status === 'completed') {
+              description = `Repair for #${updatedTicket.ticket_number} is now complete.`;
+              icon = <CheckCircle className="h-5 w-5 text-green-500"/>;
+            } else if (updatedTicket.status === 'ready') {
+              description = `Ticket #${updatedTicket.ticket_number} is ready for pickup.`;
+              icon = <CheckCircle className="h-5 w-5 text-green-500"/>;
+            } else {
+              description = `Ticket #${updatedTicket.ticket_number} status changed to ${updatedTicket.status.replace('_', ' ')}.`;
+            }
+            
+            const newActivity = {
+              id: Date.now(),
+              icon,
+              description,
+              time: new Date(updatedTicket.updated_at),
+            };
+            setActivity(prev => [newActivity, ...prev].slice(0, 10));
+          }
+        )
+        .subscribe((status: any) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('[DASHBOARD] Successfully subscribed to tickets changes');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.log('[DASHBOARD] Error subscribing to tickets changes');
+          } else if (status === 'CLOSED') {
+            console.log('[DASHBOARD] Closed subscription to tickets changes');
+          }
+        });
+
+      // Subscribe to orders table changes
+      const ordersSubscription = supabase
+        .channel('orders-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'orders',
+          },
+          (payload: any) => {
+            const newOrder = payload.new;
+            const newActivity = {
+              id: Date.now(),
+              icon: <ShoppingCart className="h-5 w-5 text-green-500"/>,
+              description: `New order #${newOrder.order_number} created for ${newOrder.customer_name}.`,
+              time: new Date(newOrder.created_at),
+            };
+            setActivity(prev => [newActivity, ...prev].slice(0, 10));
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'orders',
+          },
+          (payload: any) => {
+            const updatedOrder = payload.new;
+            const newActivity = {
+              id: Date.now(),
+              icon: <ShoppingCart className="h-5 w-5 text-green-500"/>,
+              description: `Order #${updatedOrder.order_number} status changed to ${updatedOrder.status.replace('_', ' ')}.`,
+              time: new Date(updatedOrder.updated_at),
+            };
+            setActivity(prev => [newActivity, ...prev].slice(0, 10));
+          }
+        )
+        .subscribe((status: any) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('[DASHBOARD] Successfully subscribed to orders changes');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.log('[DASHBOARD] Error subscribing to orders changes');
+          } else if (status === 'CLOSED') {
+            console.log('[DASHBOARD] Closed subscription to orders changes');
+          }
+        });
+
+      // Subscribe to customers table changes
+      const customersSubscription = supabase
+        .channel('customers-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'customers',
+          },
+          (payload: any) => {
+            const newCustomer = payload.new;
+            const newActivity = {
+              id: Date.now(),
+              icon: <Users className="h-5 w-5 text-orange-500"/>,
+              description: `New customer '${newCustomer.name}' registered.`,
+              time: new Date(newCustomer.created_at),
+            };
+            setActivity(prev => [newActivity, ...prev].slice(0, 10));
+          }
+        )
+        .subscribe((status: any) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('[DASHBOARD] Successfully subscribed to customers changes');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.log('[DASHBOARD] Error subscribing to customers changes');
+          } else if (status === 'CLOSED') {
+            console.log('[DASHBOARD] Closed subscription to customers changes');
+          }
+        });
+
+      // Subscribe to products table changes
+      const productsSubscription = supabase
+        .channel('products-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'products',
+          },
+          (payload: any) => {
+            const newProduct = payload.new;
+            const newActivity = {
+              id: Date.now(),
+              icon: <Package className="h-5 w-5 text-red-500"/>,
+              description: `New product '${newProduct.name}' was added.`,
+              time: new Date(newProduct.created_at),
+            };
+            setActivity(prev => [newActivity, ...prev].slice(0, 10));
+          }
+        )
+        .subscribe((status: any) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('[DASHBOARD] Successfully subscribed to products changes');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.log('[DASHBOARD] Error subscribing to products changes');
+          } else if (status === 'CLOSED') {
+            console.log('[DASHBOARD] Closed subscription to products changes');
+          }
+        });
+
+      // Cleanup subscriptions on unmount
+      return () => {
+        try {
+          supabase.removeChannel(ticketsSubscription);
+          supabase.removeChannel(ordersSubscription);
+          supabase.removeChannel(customersSubscription);
+          supabase.removeChannel(productsSubscription);
+        } catch (error) {
+          console.log('[DASHBOARD] Error removing channels:', error);
+        }
+      };
+    } catch (error) {
+      console.log('[DASHBOARD] Error setting up subscriptions:', error);
+    }
+  }, []);
+
+  // Fetch initial dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
       try {
-        const res = await fetch('/api/tickets', { cache: 'no-store' });
-        if (!res.ok) throw new Error(`Failed to fetch tickets: ${res.status}`);
-        const json = await res.json();
-        const list: RepairTicket[] = (json.tickets as any[]).map((t) => ({
-          id: t.id,
-          ticketNumber: t.ticket_number,
-          customerId: t.user_id,
-          customerName: t.customer_name,
-          deviceType: t.device_type,
-          deviceBrand: t.device_brand,
-          deviceModel: t.device_model,
-          issueDescription: t.issue_description,
-          status: t.status,
-          priority: t.priority,
-          estimatedCost: t.estimated_cost,
-          finalCost: t.final_cost,
-          createdAt: t.created_at,
-          updatedAt: t.updated_at,
-          estimatedCompletion: t.estimated_completion,
-        }));
-        setTickets(list);
-      } catch (e: any) {
-        setError(e.message);
+        const response = await fetch('/api/admin/dashboard');
+        if (!response.ok) throw new Error('Failed to fetch dashboard data');
+        const data = await response.json();
+        
+        setMetrics(data.metrics);
+        setChartData(data.chartData);
+        
+        // Update tickets state with recent tickets from dashboard data
+        const transformedTickets: RepairTicket[] = transformTicketsData(data.recentTickets);
+        setTickets(transformedTickets);
+        
+        // Initialize activity with some recent events
+        const initialActivity: ActivityItem[] = [
+          { id: 1, icon: <Ticket className="h-5 w-5 text-blue-500"/>, description: "Dashboard loaded with real-time updates enabled.", time: new Date() },
+        ];
+        setActivity(initialActivity);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        setError('Failed to load dashboard data');
       } finally {
         setLoading(false);
       }
     };
-    run();
+
+    fetchDashboardData();
   }, []);
 
   const recentTickets = [...tickets]
@@ -145,10 +381,43 @@ export default function DashboardPage() {
       .join("");
   };
 
+  // Calculate stats from real data
+  const totalRevenue = metrics ? metrics.total_repair_revenue + metrics.total_product_revenue : 0;
+  const activeRepairs = metrics ? metrics.tickets_received + metrics.tickets_diagnosing + 
+    metrics.tickets_repairing + metrics.tickets_ready : 0;
+  const newTickets = tickets.filter(t => {
+    const createdDate = new Date(t.createdAt);
+    const now = new Date();
+    const diffHours = Math.abs(now.getTime() - createdDate.getTime()) / 3600000;
+    return diffHours <= 24;
+  }).length;
+  const productsSold = metrics ? metrics.total_products - metrics.out_of_stock_products : 0;
+
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      <AdminHeader title="Dashboard" />
-      <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button size="icon" variant="outline" className="sm:hidden">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle Menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="sm:max-w-xs">
+            <MobileNav />
+          </SheetContent>
+        </Sheet>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <Badge variant="secondary" className="hidden sm:flex">
+            <Calendar className="mr-1 h-3 w-3" />
+            Today
+          </Badge>
+        </div>
+      </header>
+
+      <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+        {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -156,7 +425,7 @@ export default function DashboardPage() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Ksh 4,523,189</div>
+              <div className="text-2xl font-bold">Ksh {totalRevenue.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">+20.1% from last month</p>
             </CardContent>
           </Card>
@@ -166,7 +435,7 @@ export default function DashboardPage() {
               <Wrench className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">+23</div>
+              <div className="text-2xl font-bold">+{activeRepairs}</div>
               <p className="text-xs text-muted-foreground">+5 from last week</p>
             </CardContent>
           </Card>
@@ -176,7 +445,7 @@ export default function DashboardPage() {
               <Ticket className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">+12</div>
+              <div className="text-2xl font-bold">+{newTickets}</div>
               <p className="text-xs text-muted-foreground">in the last 24 hours</p>
             </CardContent>
           </Card>
@@ -186,43 +455,65 @@ export default function DashboardPage() {
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">+573</div>
+              <div className="text-2xl font-bold">+{productsSold}</div>
               <p className="text-xs text-muted-foreground">+12% from last month</p>
             </CardContent>
           </Card>
         </div>
 
+        {/* Charts and Activity */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
           <Card className="lg:col-span-4">
             <CardHeader>
               <CardTitle>Revenue Overview</CardTitle>
-               <CardDescription>Monthly revenue performance.</CardDescription>
+              <CardDescription>Monthly revenue performance.</CardDescription>
             </CardHeader>
             <CardContent className="pl-2">
               <ResponsiveContainer width="100%" height={350}>
-                 <AreaChart data={chartData}>
+                <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8}/>
                       <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `Ksh${Number(value)/1000}k`} />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="hsl(var(--muted-foreground))" 
+                    fontSize={12} 
+                    tickLine={false} 
+                    axisLine={false} 
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))" 
+                    fontSize={12} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tickFormatter={(value) => `Ksh${Number(value)/1000}k`} 
+                  />
                   <Tooltip
-                     cursor={{stroke: 'hsl(var(--chart-1))', strokeWidth: 2, fill: 'hsl(var(--muted))', fillOpacity: 0.5}}
-                     contentStyle={{
+                    cursor={{stroke: 'hsl(var(--chart-1))', strokeWidth: 2, fill: 'hsl(var(--muted))', fillOpacity: 0.5}}
+                    contentStyle={{
                       backgroundColor: "hsl(var(--background))",
                       borderColor: "hsl(var(--border))",
                       borderRadius: "var(--radius)",
                     }}
                     formatter={(value: number) => [`Ksh ${value.toLocaleString()}`, "Revenue"]}
                   />
-                  <Area type="monotone" dataKey="revenue" stroke="hsl(var(--chart-1))" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                  <Area 
+                    type="monotone" 
+                    dataKey="revenue" 
+                    stroke="hsl(var(--chart-1))" 
+                    strokeWidth={3} 
+                    fillOpacity={1} 
+                    fill="url(#colorRevenue)" 
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
+          
           <Card className="lg:col-span-3">
             <CardHeader>
               <CardTitle>Live Activity Feed</CardTitle>
@@ -231,13 +522,15 @@ export default function DashboardPage() {
             <CardContent>
               <div className="space-y-4">
                 {activity.map((item) => (
-                  <div key={item.id} className="flex items-start gap-4 animate-in fade-in-0 duration-500">
+                  <div key={item.id} className="flex items-start gap-4">
                     <div className="bg-accent/10 text-accent p-2 rounded-full">
                       {item.icon}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium">{item.description}</p>
-                      <TimeAgo date={item.time} />
+                      <p className="text-xs text-muted-foreground">
+                        {item.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -245,13 +538,18 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Tabs for Recent Tickets and Notifications */}
         <Tabs defaultValue="recent_tickets">
-          <TabsList>
-            <TabsTrigger value="recent_tickets">Recent Tickets</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications & Alerts</TabsTrigger>
-          </TabsList>
+          <div className="flex items-center">
+            <TabsList>
+              <TabsTrigger value="recent_tickets">Recent Tickets</TabsTrigger>
+              <TabsTrigger value="notifications">Notifications & Alerts</TabsTrigger>
+            </TabsList>
+          </div>
+          
           <TabsContent value="recent_tickets">
-             <Card>
+            <Card>
               <CardHeader>
                 <CardTitle>Recent Tickets</CardTitle>
                 <CardDescription>An overview of the latest repair tickets.</CardDescription>
@@ -272,13 +570,13 @@ export default function DashboardPage() {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="hidden h-9 w-9 sm:flex">
-                                  <AvatarImage src={`https://i.pravatar.cc/150?u=${ticket.customerName}`} alt={ticket.customerName} />
-                                  <AvatarFallback>{getInitials(ticket.customerName)}</AvatarFallback>
-                              </Avatar>
-                              <div>
-                                  <div className="font-medium">{ticket.customerName}</div>
-                                  <div className="text-sm text-muted-foreground">{ticket.ticketNumber}</div>
-                              </div>
+                              <AvatarImage src={`https://i.pravatar.cc/150?u=${ticket.customerName}`} alt={ticket.customerName} />
+                              <AvatarFallback>{getInitials(ticket.customerName)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">{ticket.customerName}</div>
+                              <div className="text-sm text-muted-foreground">{ticket.ticketNumber}</div>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">{ticket.deviceModel}</TableCell>
@@ -297,10 +595,11 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </TabsContent>
+          
           <TabsContent value="notifications">
             <Card>
               <CardHeader>
-                <CardTitle>Notifications &amp; Alerts</CardTitle>
+                <CardTitle>Notifications & Alerts</CardTitle>
                 <CardDescription>Actionable insights and reminders.</CardDescription>
               </CardHeader>
               <CardContent>
@@ -320,7 +619,11 @@ export default function DashboardPage() {
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">No overdue tickets. Great job!</p>
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
+                      <h3 className="text-lg font-medium">No overdue tickets</h3>
+                      <p className="text-sm text-muted-foreground">Great job! All tickets are on schedule.</p>
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -331,5 +634,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

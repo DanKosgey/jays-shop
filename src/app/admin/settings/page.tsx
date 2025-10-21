@@ -1,133 +1,305 @@
 "use client";
 
-import { AdminHeader } from "../components/header";
+import { useState } from "react";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { 
+  Save, 
+  Key, 
+  Bell, 
+  Palette,
+  Shield,
+  CreditCard,
+  Mail,
+  Menu
+} from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { MobileNav } from "../components/mobile-nav";
+// Import the LogViewer component
+import { LogViewer } from "../components/log-viewer";
 
 export default function SettingsPage() {
-  const { toast } = useToast();
+  const [shopName, setShopName] = useState("Jay's Phone Repair");
+  const [shopEmail, setShopEmail] = useState("info@jaysphonerepair.com");
+  const [shopPhone, setShopPhone] = useState("+254 700 123 456");
+  const [shopAddress, setShopAddress] = useState("123 Tech Street, Nairobi, Kenya");
+  const [notifications, setNotifications] = useState(true);
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [smsNotifications, setSmsNotifications] = useState(false);
 
-  const handleSaveChanges = () => {
-    toast({
-      title: "Settings Saved",
-      description: "Your changes have been saved successfully.",
-    });
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Handle form submission
+    console.log("Settings saved");
   };
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      <AdminHeader title="Settings" />
-      <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-        <div className="grid gap-6">
+    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button size="icon" variant="outline" className="sm:hidden">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle Menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="sm:max-w-xs">
+            <MobileNav />
+          </SheetContent>
+        </Sheet>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+        </div>
+      </header>
+
+      <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* General Settings */}
           <Card>
             <CardHeader>
-              <CardTitle>Shop Information</CardTitle>
-              <CardDescription>Update your shop's public details.</CardDescription>
+              <CardTitle>General Settings</CardTitle>
+              <CardDescription>
+                Manage your shop information and general settings.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="shop-name">Shop Name</Label>
-                <Input id="shop-name" defaultValue="Jay's phone repair shop" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="shop-address">Address</Label>
-                <Input id="shop-address" defaultValue="123 Tech Street, Silicon Valley, CA 94000" />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="shop-email">Email</Label>
-                  <Input id="shop-email" type="email" defaultValue="support@jaysphonerepair.com" />
+            <CardContent>
+              <form className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="shop-name">Shop Name</Label>
+                  <Input
+                    id="shop-name"
+                    value={shopName}
+                    onChange={(e) => setShopName(e.target.value)}
+                  />
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="shop-phone">Phone</Label>
-                  <Input id="shop-phone" type="tel" defaultValue="(123) 456-7890" />
+                <div className="space-y-2">
+                  <Label htmlFor="shop-email">Email Address</Label>
+                  <Input
+                    id="shop-email"
+                    type="email"
+                    value={shopEmail}
+                    onChange={(e) => setShopEmail(e.target.value)}
+                  />
                 </div>
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="shop-phone">Phone Number</Label>
+                  <Input
+                    id="shop-phone"
+                    value={shopPhone}
+                    onChange={(e) => setShopPhone(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="shop-address">Shop Address</Label>
+                  <Textarea
+                    id="shop-address"
+                    value={shopAddress}
+                    onChange={(e) => setShopAddress(e.target.value)}
+                    className="min-h-[100px]"
+                  />
+                </div>
+                <Button type="submit">
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Changes
+                </Button>
+              </form>
             </CardContent>
           </Card>
-          
-          <Card>
-            <CardHeader>
-                <CardTitle>AI Chatbot</CardTitle>
-                <CardDescription>Configure the AI assistant for customer support.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                        <Label htmlFor="enable-chatbot" className="text-base">Enable Chatbot</Label>
-                        <p className="text-sm text-muted-foreground">
-                           Make the AI assistant available to customers on the website.
-                        </p>
-                    </div>
-                    <Switch id="enable-chatbot" defaultChecked/>
-                </div>
-                 <div className="grid gap-2">
-                    <Label htmlFor="system-prompt">System Prompt</Label>
-                    <Textarea 
-                        id="system-prompt"
-                        placeholder="Define the chatbot's personality and instructions..."
-                        className="min-h-[200px]"
-                        defaultValue={`You are a helpful AI assistant for a phone repair shop. 
 
-Your capabilities:
-- Help customers track their repair status
-- Provide repair cost estimates
-- Answer questions about products
-- Explain shop policies
-- Offer troubleshooting advice
-
-Guidelines:
-- Be friendly and professional
-- If you don't know something, suggest they contact the shop directly
-- For specific pricing, provide ranges based on the knowledge base
-- Always mention warranty information for repairs
-- If customer seems frustrated, be empathetic
-- For urgent issues, suggest calling the shop`}
-                    />
-                     <p className="text-sm text-muted-foreground">
-                        This prompt sets the context and guidelines for the AI chatbot's responses.
+          {/* Notification Settings */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Notifications</CardTitle>
+                <CardDescription>
+                  Configure how you receive notifications.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Enable Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive notifications for important events.
                     </p>
+                  </div>
+                  <Switch
+                    checked={notifications}
+                    onCheckedChange={setNotifications}
+                  />
                 </div>
-            </CardContent>
-          </Card>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Email Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive notifications via email.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={emailNotifications}
+                    onCheckedChange={setEmailNotifications}
+                    disabled={!notifications}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>SMS Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive notifications via SMS.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={smsNotifications}
+                    onCheckedChange={setSmsNotifications}
+                    disabled={!notifications}
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile</CardTitle>
-              <CardDescription>Manage your personal account details.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="admin-name">Name</Label>
-                <Input id="admin-name" defaultValue="Admin User" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="admin-email">Email</Label>
-                <Input id="admin-email" type="email" defaultValue="admin@jaysphonerepair.com" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="admin-password">New Password</Label>
-                <Input id="admin-password" type="password" placeholder="••••••••" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="flex justify-end">
-            <Button onClick={handleSaveChanges}>Save Changes</Button>
+            {/* Security Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Security</CardTitle>
+                <CardDescription>
+                  Manage your security settings.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Two-Factor Authentication</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Add an extra layer of security to your account.
+                    </p>
+                  </div>
+                  <Button variant="outline">Enable</Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Change Password</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Update your account password.
+                    </p>
+                  </div>
+                  <Button variant="outline">Change</Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
+
+        {/* Additional Settings Sections */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                Appearance
+              </CardTitle>
+              <CardDescription>
+                Customize the look and feel of your admin panel.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Theme</Label>
+                  <Select defaultValue="system">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select theme" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">Light</SelectItem>
+                      <SelectItem value="dark">Dark</SelectItem>
+                      <SelectItem value="system">System</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button variant="outline" className="w-full">
+                  Customize Colors
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Payment
+              </CardTitle>
+              <CardDescription>
+                Configure payment methods and settings.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Default Currency</Label>
+                  <Select defaultValue="KES">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="KES">KES - Kenyan Shilling</SelectItem>
+                      <SelectItem value="USD">USD - US Dollar</SelectItem>
+                      <SelectItem value="EUR">EUR - Euro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button variant="outline" className="w-full">
+                  Payment Methods
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                Email
+              </CardTitle>
+              <CardDescription>
+                Configure email templates and settings.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Button variant="outline" className="w-full">
+                  Ticket Status Updates
+                </Button>
+                <Button variant="outline" className="w-full">
+                  Order Confirmations
+                </Button>
+                <Button variant="outline" className="w-full">
+                  Password Reset
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Log Viewer */}
+        <LogViewer />
       </main>
     </div>
   );

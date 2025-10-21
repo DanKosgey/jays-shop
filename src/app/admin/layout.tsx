@@ -1,36 +1,21 @@
-import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
-import { SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Wrench } from "lucide-react";
-import Link from "next/link";
-import { AdminNav } from "./components/admin-nav";
-import { getSupabaseServerClient } from "@/server/supabase/server";
-import { redirect } from "next/navigation";
+import { Sidebar } from './components/sidebar';
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = getSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    redirect('/');
-  }
+  // ✅ CRITICAL: Don't apply auth check to login page
+  // The children will render the login page directly without auth
+  
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <div className="flex h-16 items-center justify-center border-b shrink-0">
-          <Link href="/" className="flex items-center gap-2 font-bold text-lg text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-            <Wrench className="h-6 w-6 text-accent" />
-            <span className="font-headline">Jay's phone repair shop</span>
-          </Link>
-           <Link href="/" className="hidden items-center gap-2 font-bold text-lg text-sidebar-foreground group-data-[collapsible=icon]:flex">
-            <Wrench className="h-6 w-6 text-accent" />
-          </Link>
-        </div>
-        <AdminNav />
-      </Sidebar>
-      <SidebarInset>{children}</SidebarInset>
-    </SidebarProvider>
+    <div className="flex min-h-screen w-full bg-slate-50">
+      {/* No sidebar in the main admin layout - it will be rendered in protected layouts */}
+      <div className="flex flex-col flex-1">
+        <main className="flex-1 p-6">
+          {children}
+        </main>
+      </div>
+    </div>
   );
 }

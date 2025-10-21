@@ -71,14 +71,22 @@ export function ChatWidget() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: input, sessionId: sessionId.current }),
       });
-      if (!res.ok) throw new Error(`Chat failed: ${res.status}`);
+      
+      if (!res.ok) {
+        // Handle specific error cases
+        if (res.status === 500) {
+          throw new Error("AI service is currently unavailable. Please try again later.");
+        }
+        throw new Error(`Chat failed: ${res.status}`);
+      }
+      
       const result = await res.json();
       const assistantMessage: Message = {
         role: "assistant",
         content: result.message,
       };
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
+    } catch (error: any) {
       console.error("AI chat error:", error);
       toast({
         variant: "destructive",
@@ -87,7 +95,7 @@ export function ChatWidget() {
       });
        const errorMessage: Message = {
         role: "assistant",
-        content: "Sorry, I'm having a little trouble right now. Please try again in a moment.",
+        content: error.message || "Sorry, I'm having a little trouble right now. Please try again in a moment.",
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {

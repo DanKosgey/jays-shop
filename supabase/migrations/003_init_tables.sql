@@ -1,6 +1,6 @@
 -- Enable required extensions
 create extension if not exists pgcrypto;
-create extension if not exists uuid-ossp;
+create extension if not exists "uuid-ossp";
 
 -- Profiles linked to auth.users
 create table if not exists public.profiles (

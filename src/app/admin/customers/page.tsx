@@ -1,14 +1,13 @@
-
-
 "use client";
 
-import { AdminHeader } from "../components/header";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
+  CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
-  CardDescription
 } from "@/components/ui/card";
 import {
   Table,
@@ -20,228 +19,370 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, PlusCircle, Search, Users, DollarSign, ShoppingCart } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { useEffect } from "react";
-import { useMemo, useState, useEffect } from "react";
+import { 
+  MoreHorizontal, 
+  Search, 
+  Eye, 
+  Mail, 
+  Phone,
+  User,
+  Users,
+  Menu,
+  PlusCircle,
+  Edit,
+  Trash2
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { MobileNav } from "../components/mobile-nav";
 
-type Customer = {
-    id: string;
-    name: string;
-    email: string;
-    phone: string;
-    totalTickets: number;
-    totalSpent: number;
-}
+export default function CustomersPage() {
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: ""
+  });
 
-const getInitials = (name: string) => {
+  // Fetch customers from the API
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/customers?search=${search}`);
+        if (!response.ok) throw new Error('Failed to fetch customers');
+        const data = await response.json();
+        setCustomers(data.customers);
+      } catch (error) {
+        console.error('Error fetching customers:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomers();
+  }, [search]);
+
+  const getInitials = (name: string) => {
     return name
       .split(" ")
       .map((n) => n[0])
       .join("");
-};
+  };
 
-function AddCustomerForm() {
-    return (
-        <form className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="customer-name" className="text-right">Name</Label>
-                <Input id="customer-name" placeholder="e.g., John Doe" className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="customer-email" className="text-right">Email</Label>
-                <Input id="customer-email" type="email" placeholder="e.g., john.d@example.com" className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="customer-phone" className="text-right">Phone</Label>
-                <Input id="customer-phone" type="tel" placeholder="e.g., 555-0199" className="col-span-3" />
-            </div>
-        </form>
-    );
-}
+  const handleCreateCustomer = async () => {
+    try {
+      const response = await fetch('/api/customers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
 
-export default function CustomersPage() {
-    const [customers, setCustomers] = useState<Customer[]>([]);
-    const [isCreateOpen, setIsCreateOpen] = useState(false);
+      if (!response.ok) throw new Error('Failed to create customer');
+      
+      const newCustomer = await response.json();
+      setCustomers([newCustomer, ...customers]);
+      setIsCreateDialogOpen(false);
+      setFormData({ name: "", email: "", phone: "" });
+    } catch (error) {
+      console.error('Error creating customer:', error);
+    }
+  };
 
-    useEffect(() => {
-        const run = async () => {
-            const res = await fetch('/api/tickets', { cache: 'no-store' });
-            if (!res.ok) return;
-            const json = await res.json();
-            const customerMap = new Map<string, Customer>();
-            (json.tickets as any[]).forEach((t) => {
-                const customerId = t.user_id as string;
-                const customerName = t.customer_name as string;
-                let customer = customerMap.get(customerId);
-                if (!customer) {
-                    customer = {
-                        id: customerId,
-                        name: customerName,
-                        email: `${customerName.toLowerCase().replace(' ', '.')}@example.com`,
-                        phone: `555-01${Math.floor(Math.random() * 90) + 10}`,
-                        totalTickets: 0,
-                        totalSpent: 0,
-                    };
-                }
-                customer.totalTickets += 1;
-                customer.totalSpent += (t.final_cost ?? t.estimated_cost ?? 0) as number;
-                customerMap.set(customerId, customer);
-            });
-            setCustomers(Array.from(customerMap.values()));
-        };
-        run();
-    }, []);
-  
-  const totalCustomerCount = customers.length;
-  const totalRevenue = customers.reduce((acc, customer) => acc + customer.totalSpent, 0);
-  const avgRevenuePerCustomer = customers.length > 0 ? totalRevenue / totalCustomerCount : 0;
+  const handleUpdateCustomer = async () => {
+    try {
+      const response = await fetch('/api/customers', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ...formData, id: selectedCustomer.id }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update customer');
+      
+      const updatedCustomer = await response.json();
+      setCustomers(customers.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
+      setIsEditDialogOpen(false);
+      setSelectedCustomer(null);
+      setFormData({ name: "", email: "", phone: "" });
+    } catch (error) {
+      console.error('Error updating customer:', error);
+    }
+  };
+
+  const handleDeleteCustomer = async (id: string) => {
+    try {
+      const response = await fetch(`/api/customers?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Failed to delete customer');
+      
+      setCustomers(customers.filter(c => c.id !== id));
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+    }
+  };
+
+  const openEditDialog = (customer: any) => {
+    setSelectedCustomer(customer);
+    setFormData({
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone || ""
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const openCreateDialog = () => {
+    setSelectedCustomer(null);
+    setFormData({ name: "", email: "", phone: "" });
+    setIsCreateDialogOpen(true);
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <AdminHeader title="Customers" />
-      <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalCustomerCount}</div>
-              <p className="text-xs text-muted-foreground">Unique customers in the system</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Customer Spending</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">Ksh{totalRevenue.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">Across all orders and repairs</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg. Revenue/Customer</CardTitle>
-              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">Ksh{avgRevenuePerCustomer.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">Average lifetime value</p>
-            </CardContent>
-          </Card>
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button size="icon" variant="outline" className="sm:hidden">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle Menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="sm:max-w-xs">
+            <MobileNav />
+          </SheetContent>
+        </Sheet>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold text-foreground">Customers</h1>
         </div>
+      </header>
 
+      <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
         <Card>
           <CardHeader>
-             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                 <div>
-                    <CardTitle>Customer List</CardTitle>
-                    <CardDescription>Manage your customer database.</CardDescription>
-                </div>
-                <div className="ml-auto flex items-center gap-2">
-                    <div className="relative flex-1 max-w-xs">
-                        <Input placeholder="Search customers..." className="pl-10 h-10"/>
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
-                    </div>
-                     <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                        <DialogTrigger asChild>
-                            <Button size="sm" className="h-10 gap-1">
-                                <PlusCircle className="h-4 w-4" />
-                                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Add Customer</span>
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Add New Customer</DialogTitle>
-                                <DialogDescription>
-                                    Enter the details for the new customer.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <AddCustomerForm />
-                            <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                                <Button onClick={() => setIsCreateOpen(false)}>Add Customer</Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
-                </div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div>
+                <CardTitle>Customer Directory</CardTitle>
+                <CardDescription>Manage and view all your customers.</CardDescription>
+              </div>
+              <div className="relative flex-1 sm:ml-auto">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search customers..."
+                  className="pl-8 h-10"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <Button onClick={openCreateDialog}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Customer
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead className="hidden md:table-cell">Contact</TableHead>
-                  <TableHead className="hidden sm:table-cell text-center">Total Tickets</TableHead>
-                  <TableHead className="text-right">Total Spent</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {customers.map((customer) => (
-                  <TableRow key={customer.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                         <Avatar className="h-9 w-9">
-                            <AvatarImage src={`https://i.pravatar.cc/150?u=${customer.email}`} alt={customer.name} />
-                            <AvatarFallback>{getInitials(customer.name)}</AvatarFallback>
-                        </Avatar>
-                        <div className="font-medium">{customer.name}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                        <div className="text-sm text-muted-foreground">{customer.email}</div>
-                        <div className="text-sm text-muted-foreground">{customer.phone}</div>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell text-center">{customer.totalTickets}</TableCell>
-                    <TableCell className="text-right">Ksh{customer.totalSpent.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
-                           <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+            {loading ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              </div>
+            ) : customers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium">No customers found</h3>
+                <p className="text-muted-foreground mb-4">
+                  Get started by adding a new customer.
+                </p>
+                <Button onClick={openCreateDialog}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add Customer
+                </Button>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead className="hidden md:table-cell">Contact</TableHead>
+                    <TableHead className="text-right">Orders</TableHead>
+                    <TableHead className="text-right hidden sm:table-cell">Total Spent</TableHead>
+                    <TableHead className="hidden lg:table-cell">Last Order</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {customers.map((customer) => (
+                    <TableRow key={customer.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={`https://i.pravatar.cc/150?u=${customer.id}`} alt={customer.name} />
+                            <AvatarFallback>{getInitials(customer.name)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{customer.name}</div>
+                            <div className="text-sm text-muted-foreground md:hidden">{customer.email}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{customer.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{customer.phone || 'N/A'}</span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">{customer.totalOrders}</TableCell>
+                      <TableCell className="text-right hidden sm:table-cell">
+                        Ksh{customer.totalSpent.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {customer.lastOrder || 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Mail className="mr-2 h-4 w-4" />
+                              Send Email
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => openEditDialog(customer)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit Customer
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDeleteCustomer(customer.id)}>
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Customer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </main>
+
+      {/* Create/Edit Customer Dialog */}
+      <Dialog open={isEditDialogOpen || isCreateDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setIsEditDialogOpen(false);
+          setIsCreateDialogOpen(false);
+          setSelectedCustomer(null);
+          setFormData({ name: "", email: "", phone: "" });
+        }
+      }}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{selectedCustomer ? "Edit Customer" : "Create Customer"}</DialogTitle>
+            <DialogDescription>
+              {selectedCustomer 
+                ? "Make changes to the customer's information." 
+                : "Add a new customer to your directory."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="w-full"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">
+                Email
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  className="w-full"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="phone" className="text-right">
+                Phone
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  className="w-full"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              type="submit" 
+              onClick={selectedCustomer ? handleUpdateCustomer : handleCreateCustomer}
+            >
+              {selectedCustomer ? "Save Changes" : "Create Customer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

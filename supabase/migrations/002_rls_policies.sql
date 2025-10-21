@@ -1,25 +1,99 @@
--- Enable RLS
-alter table public.tickets enable row level security;
-alter table public.profiles enable row level security;
-alter table public.products enable row level security;
+-- Enable RLS on all tables
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tickets ENABLE ROW LEVEL SECURITY;
 
--- Profiles: self read, admin all
-create policy if not exists profiles_self_select on public.profiles
-for select using (auth.uid() = id or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Profiles insert controlled by trigger" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Admins can delete profiles" ON public.profiles;
 
--- Tickets: owner CRUD, admins all
-create policy if not exists tickets_owner_select on public.tickets
-for select using (user_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+DROP POLICY IF EXISTS "Public can view products" ON public.products;
+DROP POLICY IF EXISTS "Admins can create products" ON public.products;
+DROP POLICY IF EXISTS "Users can create own second hand products" ON public.products;
+DROP POLICY IF EXISTS "Admins can update products" ON public.products;
+DROP POLICY IF EXISTS "Users can update own products" ON public.products;
+DROP POLICY IF EXISTS "Admins can delete products" ON public.products;
+DROP POLICY IF EXISTS "Users can delete own products" ON public.products;
 
-create policy if not exists tickets_owner_insert on public.tickets
-for insert with check (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users can view own tickets" ON public.tickets;
+DROP POLICY IF EXISTS "Users can create own tickets" ON public.tickets;
+DROP POLICY IF EXISTS "Users can update own tickets" ON public.tickets;
+DROP POLICY IF EXISTS "Admins can delete tickets" ON public.tickets;
+DROP POLICY IF EXISTS "Public can view ticket progress" ON public.tickets;
 
-create policy if not exists tickets_owner_update on public.tickets
-for update using (user_id = auth.uid() or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+-- ============================================
+-- PROFILES TABLE POLICIES
+-- ============================================
+-- Only admins can view profiles
+CREATE POLICY "Admins can view all profiles" ON public.profiles
+FOR SELECT USING (
+  auth.jwt() ->> 'role' = 'admin'
+);
 
--- Products: anyone can read, only admins write
-create policy if not exists products_public_select on public.products
-for select using (true);
+-- Profiles insert controlled by trigger (on signup)
+CREATE POLICY "Profiles insert controlled by trigger" ON public.profiles
+FOR INSERT WITH CHECK (FALSE);
 
-create policy if not exists products_admin_mod on public.products
-for all using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')) with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+-- Only admins can update profiles
+CREATE POLICY "Admins can update profiles" ON public.profiles
+FOR UPDATE USING (
+  auth.jwt() ->> 'role' = 'admin'
+);
+
+-- Only admins can delete profiles
+CREATE POLICY "Admins can delete profiles" ON public.profiles
+FOR DELETE USING (
+  auth.jwt() ->> 'role' = 'admin'
+);
+
+-- ============================================
+-- PRODUCTS TABLE POLICIES
+-- ============================================
+-- ANYONE (authenticated or not) can view all products
+CREATE POLICY "Public can view all products" ON public.products
+FOR SELECT USING (true);
+
+-- Only admins can create products
+CREATE POLICY "Only admins can create products" ON public.products
+FOR INSERT WITH CHECK (
+  auth.jwt() ->> 'role' = 'admin'
+);
+
+-- Only admins can update products
+CREATE POLICY "Only admins can update products" ON public.products
+FOR UPDATE USING (
+  auth.jwt() ->> 'role' = 'admin'
+);
+
+-- Only admins can delete products
+CREATE POLICY "Only admins can delete products" ON public.products
+FOR DELETE USING (
+  auth.jwt() ->> 'role' = 'admin'
+);
+
+-- ============================================
+-- TICKETS TABLE POLICIES
+-- ============================================
+-- ANYONE (authenticated or not) can view all tickets (for customer lookup)
+CREATE POLICY "Public can view all tickets" ON public.tickets
+FOR SELECT USING (true);
+
+-- Only admins can create tickets
+CREATE POLICY "Only admins can create tickets" ON public.tickets
+FOR INSERT WITH CHECK (
+  auth.jwt() ->> 'role' = 'admin'
+);
+
+-- Only admins can update tickets
+CREATE POLICY "Only admins can update tickets" ON public.tickets
+FOR UPDATE USING (
+  auth.jwt() ->> 'role' = 'admin'
+);
+
+-- Only admins can delete tickets
+CREATE POLICY "Only admins can delete tickets" ON public.tickets
+FOR DELETE USING (
+  auth.jwt() ->> 'role' = 'admin'
+);
