@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/server/supabase/server';
+import { getSupabaseAdminClient } from '@/server/supabase/admin';
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = await getSupabaseServerClient();
+    const supabase = getSupabaseAdminClient();
     
     // Get query parameters
     const { searchParams } = new URL(req.url);
@@ -57,13 +57,14 @@ export async function GET(req: NextRequest) {
     }
 
     // Transform the data to match the expected format
+    // Add safety check for item.products
     const transformedData = (data || []).map((item: any) => ({
       id: item.id,
       condition: item.condition,
       seller_name: item.seller_name,
       created_at: item.created_at,
       updated_at: item.updated_at,
-      ...item.products // Spread the product data
+      ...(item.products || {}) // Safely spread the product data
     }));
 
     return NextResponse.json({

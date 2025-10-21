@@ -98,6 +98,7 @@ CREATE TABLE public.tickets (
 CREATE TABLE public.orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  customer_id UUID REFERENCES public.customers(id) ON DELETE SET NULL,
   order_number TEXT NOT NULL UNIQUE,
   customer_name TEXT NOT NULL,
   status order_status NOT NULL DEFAULT 'pending',

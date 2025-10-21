@@ -58,53 +58,15 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MobileNav } from "../components/mobile-nav";
 import { PageLogger } from "../components/page-logger";
 
-// Mock data for second-hand products
-const mockSecondHandProducts = [
-  {
-    id: "1",
-    name: "iPhone 12 Pro Max",
-    category: "Smartphones",
-    description: "Excellent condition, minor scratches on back. Fully functional with all accessories.",
-    price: 65000,
-    stockQuantity: 1,
-    imageUrl: "/placeholder.svg",
-    imageHint: "iPhone 12 Pro Max",
-    isFeatured: false,
-    condition: "Like New",
-    sellerName: "John Doe"
-  },
-  {
-    id: "2",
-    name: "Samsung Galaxy S21 Ultra",
-    category: "Smartphones",
-    description: "Good condition with normal wear. Battery health at 85%. Comes with charger.",
-    price: 45000,
-    stockQuantity: 1,
-    imageUrl: "/placeholder.svg",
-    imageHint: "Samsung Galaxy S21 Ultra",
-    isFeatured: false,
-    condition: "Good",
-    sellerName: "Jane Smith"
-  },
-  {
-    id: "3",
-    name: "AirPods Pro (2nd Gen)",
-    category: "Audio",
-    description: "Lightly used AirPods Pro with wireless charging case. All functions working perfectly.",
-    price: 18000,
-    stockQuantity: 1,
-    imageUrl: "/placeholder.svg",
-    imageHint: "AirPods Pro",
-    isFeatured: false,
-    condition: "Like New",
-    sellerName: "Mike Johnson"
-  }
-];
+
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [secondHandProducts, setSecondHandProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [secondHandLoading, setSecondHandLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [secondHandError, setSecondHandError] = useState<string | null>(null);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isAddSecondHandOpen, setIsAddSecondHandOpen] = useState(false);
 
@@ -134,6 +96,23 @@ export default function ProductsPage() {
       }
     };
     fetchProducts();
+  }, []);
+
+  useEffect(() => {
+    const fetchSecondHandProducts = async () => {
+      try {
+        setSecondHandLoading(true);
+        const res = await fetch('/api/second-hand-products?limit=100', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Failed to fetch second-hand products: ${res.status}`);
+        const json = await res.json();
+        setSecondHandProducts(json.products || []);
+      } catch (e: any) {
+        setSecondHandError(e.message);
+      } finally {
+        setSecondHandLoading(false);
+      }
+    };
+    fetchSecondHandProducts();
   }, []);
 
   const outOfStockCount = products.filter(p => (p.stockQuantity ?? 0) === 0).length;
@@ -188,7 +167,7 @@ export default function ProductsPage() {
               <Eye className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockSecondHandProducts.length}</div>
+              <div className="text-2xl font-bold">{secondHandProducts.length}</div>
               <p className="text-xs text-muted-foreground">Items listed in marketplace</p>
             </CardContent>
           </Card>
@@ -361,79 +340,112 @@ export default function ProductsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="hidden w-[100px] sm:table-cell">
-                    <span className="sr-only">Image</span>
-                  </TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead className="hidden sm:table-cell">Condition</TableHead>
-                  <TableHead className="hidden md:table-cell">Category</TableHead>
-                  <TableHead className="text-right">Price</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockSecondHandProducts.map((product: any) => (
-                  <TableRow key={product.id}>
-                    <TableCell className="hidden sm:table-cell p-2">
-                      <Image
-                        alt={product.name}
-                        className="aspect-square rounded-md object-cover"
-                        height="64"
-                        src={product.imageUrl}
-                        width="64"
-                        data-ai-hint={product.imageHint}
-                      />
-                    </TableCell>
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <Badge 
-                        variant={product.condition === 'Like New' ? 'default' : product.condition === 'Good' ? 'secondary' : 'outline'}
-                        className={cn(product.condition === 'Like New' && "bg-green-600 hover:bg-green-700")}
-                      >
-                        {product.condition}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <Badge variant="outline">{product.category}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">Ksh{product.price.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View on Site
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Unlist
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+            {secondHandLoading && <div className="text-sm text-muted-foreground py-4">Loading second-hand products...</div>}
+            {secondHandError && <div className="text-sm text-destructive py-4">{secondHandError}</div>}
+            {!secondHandLoading && !secondHandError && secondHandProducts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Eye className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium">No second-hand products found</h3>
+                <p className="text-muted-foreground mb-4">
+                  Get started by adding a new second-hand product to the marketplace.
+                </p>
+                <Dialog open={isAddSecondHandOpen} onOpenChange={setIsAddSecondHandOpen}>
+                  <DialogTrigger asChild>
+                    <Button onClick={() => setIsAddSecondHandOpen(true)}>
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Add Second-Hand Product
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[480px]">
+                    <DialogHeader>
+                      <DialogTitle>Add Second-Hand Product</DialogTitle>
+                      <DialogDescription>
+                        Add a new used or refurbished item to the marketplace.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <AddSecondHandItemForm />
+                  </DialogContent>
+                </Dialog>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="hidden w-[100px] sm:table-cell">
+                      <span className="sr-only">Image</span>
+                    </TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead className="hidden sm:table-cell">Condition</TableHead>
+                    <TableHead className="hidden md:table-cell">Category</TableHead>
+                    <TableHead className="text-right">Price</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )
+                </TableHeader>
+                <TableBody>
+                  {secondHandProducts.map((product: any) => (
+                    <TableRow key={product.id}>
+                      <TableCell className="hidden sm:table-cell p-2">
+                        <Image
+                          alt={product.name}
+                          className="aspect-square rounded-md object-cover"
+                          height="64"
+                          src={product.image_url || product.imageUrl || "/placeholder.svg"}
+                          width="64"
+                          data-ai-hint={product.imageHint || "Second-hand product"}
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">{product.name}</TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <Badge 
+                          variant={product.condition === 'Like New' ? 'default' : product.condition === 'Good' ? 'secondary' : 'outline'}
+                          className={cn(product.condition === 'Like New' && "bg-green-600 hover:bg-green-700")}
+                        >
+                          {product.condition}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <Badge variant="outline">{product.category}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">Ksh{product.price?.toFixed(2) || '0.00'}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View on Site
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Unlist
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
+          <CardFooter>
+            <div className="text-xs text-muted-foreground">
+              Showing <strong>1-{secondHandProducts.length}</strong> of <strong>{secondHandProducts.length}</strong> second-hand products
+            </div>
+          </CardFooter>
         </Card>
       </main>
     </div>

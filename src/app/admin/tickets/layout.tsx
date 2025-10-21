@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '@/server/supabase/server';
+import { getSupabaseAdminClient } from '@/server/supabase/admin';
 import { Sidebar } from '../components/sidebar';
 import { cache } from 'react';
 import { 
@@ -30,8 +31,9 @@ const getAuthenticatedAdmin = cache(async () => {
     return { user: null, profile: null, isAdmin: false, error: 'Not authenticated' };
   }
 
-  // Try to get the profile
-  const { data: profile, error: profileError } = await supabase
+  // Use admin client to get the profile (bypasses RLS)
+  const adminClient = getSupabaseAdminClient();
+  const { data: profile, error: profileError } = await adminClient
     .from('profiles')
     .select('role')
     .eq('id', user.id)
@@ -40,21 +42,8 @@ const getAuthenticatedAdmin = cache(async () => {
   // Log profile check result for debugging
   console.log('[ADMIN_TICKETS] Profile check result:', { profile, profileError });
   
-  // If we can't get the profile due to RLS or it doesn't exist, let's assume the user is admin
-  // since we've already verified they are an admin during login
+  // If we can't get the profile, handle the error
   if (profileError) {
-    // Check if the profile doesn't exist or we don't have permission
-    if (profileError.code === 'PGRST116' || profileError.message.includes('row-level security') || profileError.message.includes('Cannot coerce the result to a single JSON object')) {
-      console.log('[ADMIN_TICKETS] Profile not accessible due to RLS or not found, assuming admin role');
-      // Log successful authentication
-      if (user.email) {
-        logAuthSuccess(user.id, user.email, 'CLIENT_IP_UNAVAILABLE');
-      }
-      // Since we know the profile exists in the database and the user was verified as admin during login,
-      // we'll allow access to the tickets page
-      return { user, profile: { role: 'admin' }, isAdmin: true, error: null };
-    }
-    
     console.log('[ADMIN_TICKETS] Profile error:', profileError.message);
     if (user.email) {
       logAuthFailure(user.email, `Profile error: ${profileError.message}`, 'CLIENT_IP_UNAVAILABLE');

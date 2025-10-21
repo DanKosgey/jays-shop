@@ -20,7 +20,6 @@ export async function GET(req: NextRequest) {
       .from('customers')
       .select(`
         *,
-        tickets(count),
         orders(count)
       `, { count: 'exact' })
       .order('created_at', { ascending: false })
@@ -160,13 +159,10 @@ export async function DELETE(req: NextRequest) {
 
 // Helper function to calculate total spent by a customer
 function calculateTotalSpent(customer: any) {
-  const ticketTotal = customer.tickets?.reduce((sum: number, ticket: any) => {
-    return sum + (ticket.final_cost || 0);
-  }, 0) || 0;
-
+  // Calculate based on orders now that we have the proper relationship
   const orderTotal = customer.orders?.reduce((sum: number, order: any) => {
     return sum + (order.total_amount || 0);
   }, 0) || 0;
 
-  return ticketTotal + orderTotal;
+  return orderTotal;
 }
