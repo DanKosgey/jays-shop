@@ -163,6 +163,7 @@ CREATE INDEX idx_tickets_created_at ON public.tickets(created_at);
 ### 4.4 Orders Indexes
 ```sql
 CREATE INDEX idx_orders_user_id ON public.orders(user_id);
+CREATE INDEX idx_orders_customer_id ON public.orders(customer_id);
 CREATE INDEX idx_orders_status ON public.orders(status);
 CREATE INDEX idx_orders_created_at ON public.orders(created_at);
 ```
