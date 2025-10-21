@@ -138,6 +138,9 @@ CREATE TABLE public.customers (
 ### 3.1 Order Items (already defined above)
 This junction table represents the many-to-many relationship between orders and products.
 
+### 3.2 Customer-Order Relationship
+The orders table has a direct foreign key relationship to the customers table through the customer_id column. This allows for efficient querying of customer orders and aggregation of customer statistics.
+
 ## 4. Indexes
 
 ### 4.1 Profiles Indexes

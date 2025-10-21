@@ -453,90 +453,263 @@ export default function ProductsPage() {
 }
 
 function AddNewProductForm() {
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('');
+  const [price, setPrice] = useState('');
+  const [stock, setStock] = useState('');
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Prepare data according to schema
+      const productData = {
+        name,
+        category: category || null,
+        price: parseFloat(price),
+        stock_quantity: stock ? parseInt(stock) : 0,
+        description,
+        image_url: '/placeholder.svg', // Default image
+        is_featured: false, // Default value
+      };
+
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create product');
+      }
+
+      const newProduct = await response.json();
+      
+      // Close the dialog and reset form
+      window.location.reload(); // Simple way to refresh the data
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="grid gap-4 py-4">
-      <div className="grid gap-2">
-        <Label htmlFor="product-name">Product Name</Label>
-        <Input id="product-name" placeholder="e.g., Volta-Charge 100W PD Station" />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="product-category">Category</Label>
-        <Input id="product-category" placeholder="e.g., Chargers" />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit}>
+      <div className="grid gap-4 py-4">
         <div className="grid gap-2">
-          <Label htmlFor="product-price">Price (Ksh)</Label>
-          <Input id="product-price" type="number" placeholder="e.g., 8000" />
+          <Label htmlFor="product-name">Product Name</Label>
+          <Input 
+            id="product-name" 
+            placeholder="e.g., Volta-Charge 100W PD Station" 
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="product-stock">Stock Quantity</Label>
-          <Input id="product-stock" type="number" placeholder="e.g., 50" />
+          <Label htmlFor="product-category">Category</Label>
+          <Input 
+            id="product-category" 
+            placeholder="e.g., Chargers" 
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          />
         </div>
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="product-photos">Upload Photo</Label>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="w-full">
-            <Upload className="mr-2 h-4 w-4" />
-            Choose File
-          </Button>
-          <Input id="product-photos" type="file" className="hidden" />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="product-price">Price (Ksh)</Label>
+            <Input 
+              id="product-price" 
+              type="number" 
+              placeholder="e.g., 8000" 
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="product-stock">Stock Quantity</Label>
+            <Input 
+              id="product-stock" 
+              type="number" 
+              placeholder="e.g., 50" 
+              value={stock}
+              onChange={(e) => setStock(e.target.value)}
+            />
+          </div>
         </div>
+        <div className="grid gap-2">
+          <Label htmlFor="product-description">Description</Label>
+          <Textarea 
+            id="product-description" 
+            placeholder="Describe the product..." 
+            className="min-h-[100px]" 
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+          />
+        </div>
+        {error && <div className="text-sm text-destructive text-center">{error}</div>}
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Creating...' : 'Add New Product'}
+        </Button>
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor="product-description">Description</Label>
-        <Textarea id="product-description" placeholder="Describe the product..." className="min-h-[100px]" />
-      </div>
-      <Button type="submit">Add New Product</Button>
-    </div>
+    </form>
   );
 }
 
 function AddSecondHandItemForm() {
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('');
+  const [condition, setCondition] = useState('Like New');
+  const [price, setPrice] = useState('');
+  const [description, setDescription] = useState('');
+  const [sellerName, setSellerName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      // First, create a regular product
+      const productData = {
+        name,
+        category: category || null,
+        price: parseFloat(price),
+        stock_quantity: 1, // Second-hand items typically have quantity of 1
+        description,
+        image_url: '/placeholder.svg', // Default image
+        is_featured: false, // Default value
+      };
+
+      const productResponse = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productData),
+      });
+
+      if (!productResponse.ok) {
+        const errorData = await productResponse.json();
+        throw new Error(errorData.error || 'Failed to create product');
+      }
+
+      const newProduct = await productResponse.json();
+      
+      // Then, create a second-hand product entry that references this product
+      const secondHandData = {
+        product_id: newProduct.id,
+        condition,
+        seller_name: sellerName,
+      };
+
+      const secondHandResponse = await fetch('/api/second-hand-products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(secondHandData),
+      });
+
+      if (!secondHandResponse.ok) {
+        const errorData = await secondHandResponse.json();
+        throw new Error(errorData.error || 'Failed to create second-hand product entry');
+      }
+
+      // Reload the page to show the new product
+      window.location.reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="grid gap-4 py-4">
-      <div className="grid gap-2">
-        <Label htmlFor="item-name">Item Name</Label>
-        <Input id="item-name" placeholder="e.g., Used iPhone 12 Pro" />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="item-category">Category</Label>
-        <Input id="item-category" placeholder="e.g., Smartphones" />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="item-condition">Condition</Label>
-        <select 
-          id="item-condition" 
-          className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <option>Like New</option>
-          <option>Good</option>
-          <option>Fair</option>
-        </select>
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="asking-price">Asking Price (Ksh)</Label>
-        <Input id="asking-price" type="number" placeholder="e.g., 60000" />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="item-photos">Upload Photos</Label>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="w-full">
-            <Upload className="mr-2 h-4 w-4" />
-            Choose Files
-          </Button>
-          <Input id="item-photos" type="file" multiple className="hidden" />
+    <form onSubmit={handleSubmit}>
+      <div className="grid gap-4 py-4">
+        <div className="grid gap-2">
+          <Label htmlFor="item-name">Item Name</Label>
+          <Input 
+            id="item-name" 
+            placeholder="e.g., Used iPhone 12 Pro" 
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
         </div>
+        <div className="grid gap-2">
+          <Label htmlFor="item-category">Category</Label>
+          <Input 
+            id="item-category" 
+            placeholder="e.g., Smartphones" 
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="item-condition">Condition</Label>
+          <select 
+            id="item-condition" 
+            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            value={condition}
+            onChange={(e) => setCondition(e.target.value)}
+          >
+            <option value="Like New">Like New</option>
+            <option value="Good">Good</option>
+            <option value="Fair">Fair</option>
+          </select>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="asking-price">Asking Price (Ksh)</Label>
+          <Input 
+            id="asking-price" 
+            type="number" 
+            placeholder="e.g., 60000" 
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            required
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="seller-name">Seller Name</Label>
+          <Input 
+            id="seller-name" 
+            placeholder="e.g., John Doe" 
+            value={sellerName}
+            onChange={(e) => setSellerName(e.target.value)}
+            required
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="item-description">Description</Label>
+          <Textarea 
+            id="item-description" 
+            placeholder="Describe the item, including any wear and tear." 
+            className="min-h-[100px]" 
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+          />
+        </div>
+        {error && <div className="text-sm text-destructive text-center">{error}</div>}
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Adding...' : 'Add Product to Marketplace'}
+        </Button>
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor="item-description">Description</Label>
-        <Textarea 
-          id="item-description" 
-          placeholder="Describe the item, including any wear and tear." 
-          className="min-h-[100px]" 
-        />
-      </div>
-      <Button type="submit">Add Product to Marketplace</Button>
-    </div>
+    </form>
   );
 }

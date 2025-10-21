@@ -112,3 +112,123 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
   }
 }
+
+export async function POST(req: NextRequest) {
+  try {
+    const supabase = await getSupabaseServerClient();
+    
+    // Parse request body
+    const body = await req.json();
+    
+    // Validate required fields
+    if (!body.name || !body.description || !body.price) {
+      return NextResponse.json({ error: 'Missing required fields: name, description, and price are required' }, { status: 400 });
+    }
+    
+    // Prepare data for insertion
+    const productData = {
+      name: body.name,
+      description: body.description,
+      price: parseFloat(body.price),
+      category: body.category || null,
+      stock_quantity: body.stock_quantity ? parseInt(body.stock_quantity) : 0,
+      image_url: body.image_url || '/placeholder.svg',
+      is_featured: body.is_featured || false,
+      // Generate a slug from the name if not provided
+      slug: body.slug || body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || null,
+    };
+
+    // Insert new product
+    const { data, error } = await supabase
+      .from('products')
+      .insert([productData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating product:', error);
+      return NextResponse.json({ error: 'Failed to create product', details: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data, { status: 201 });
+  } catch (error: any) {
+    console.error('Unexpected error in products POST:', error);
+    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const supabase = await getSupabaseServerClient();
+    
+    // Parse request body
+    const body = await req.json();
+
+    if (!body.id) {
+      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
+    }
+
+    // Prepare data for update (only include fields that are provided)
+    const updateData: any = {};
+    if (body.name !== undefined) updateData.name = body.name;
+    if (body.description !== undefined) updateData.description = body.description;
+    if (body.price !== undefined) updateData.price = parseFloat(body.price);
+    if (body.category !== undefined) updateData.category = body.category;
+    if (body.stock_quantity !== undefined) updateData.stock_quantity = parseInt(body.stock_quantity);
+    if (body.image_url !== undefined) updateData.image_url = body.image_url;
+    if (body.is_featured !== undefined) updateData.is_featured = body.is_featured;
+    if (body.slug !== undefined) updateData.slug = body.slug;
+
+    // Update product
+    const { data, error } = await supabase
+      .from('products')
+      .update(updateData)
+      .eq('id', body.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating product:', error);
+      return NextResponse.json({ error: 'Failed to update product', details: error.message }, { status: 500 });
+    }
+
+    if (!data) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(data);
+  } catch (error: any) {
+    console.error('Unexpected error in products PUT:', error);
+    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const supabase = await getSupabaseServerClient();
+    
+    // Get product ID from query parameters
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
+    }
+
+    // Delete product
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting product:', error);
+      return NextResponse.json({ error: 'Failed to delete product', details: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ message: 'Product deleted successfully' });
+  } catch (error: any) {
+    console.error('Unexpected error in products DELETE:', error);
+    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
+  }
+}

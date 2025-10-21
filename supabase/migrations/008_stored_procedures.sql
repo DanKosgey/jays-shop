@@ -1,4 +1,5 @@
--- Stored procedures and functions
+-- Migration 008: Stored procedures and functions
+-- Description: Core business logic functions and triggers
 
 -- Function to generate ticket number
 CREATE OR REPLACE FUNCTION public.generate_ticket_number()
@@ -31,7 +32,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger to update product stock
+-- Drop trigger if exists, then create it
+DROP TRIGGER IF EXISTS update_product_stock_trigger ON public.order_items;
 CREATE TRIGGER update_product_stock_trigger
 AFTER INSERT ON public.order_items
 FOR EACH ROW
@@ -46,7 +48,7 @@ BEGIN
   SELECT SUM(price_per_unit * quantity)
   INTO total
   FROM public.order_items
-  WHERE order_items.order_id = order_items.order_id;
+  WHERE order_items.order_id = calculate_order_total.order_id;  -- Fixed: qualify parameter name
   
   RETURN COALESCE(total, 0);
 END;
@@ -155,3 +157,12 @@ GRANT EXECUTE ON FUNCTION public.calculate_order_total(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_customer_stats(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.search_products(TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_dashboard_metrics() TO authenticated;
+
+-- Add helpful comments
+COMMENT ON FUNCTION public.generate_ticket_number() IS 'Generates unique ticket numbers in format RPR-YYYY-XXXX';
+COMMENT ON FUNCTION public.generate_order_number() IS 'Generates unique order numbers in format ORD-YYYY-XXXX';
+COMMENT ON FUNCTION public.update_product_stock() IS 'Automatically decreases product stock when order items are created';
+COMMENT ON FUNCTION public.calculate_order_total(UUID) IS 'Calculates total amount for an order based on order items';
+COMMENT ON FUNCTION public.get_customer_stats(UUID) IS 'Returns comprehensive statistics for a customer';
+COMMENT ON FUNCTION public.search_products(TEXT) IS 'Full-text search across products with relevance ranking';
+COMMENT ON FUNCTION public.get_dashboard_metrics() IS 'Returns all key metrics for admin dashboard';
