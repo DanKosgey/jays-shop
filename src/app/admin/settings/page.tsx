@@ -34,6 +34,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MobileNav } from "../components/mobile-nav";
 // Import the LogViewer component
 import { LogViewer } from "../components/log-viewer";
+import { PageLogger } from "../components/page-logger";
 
 export default function SettingsPage() {
   const [shopName, setShopName] = useState("Jay's Phone Repair");
@@ -52,6 +53,8 @@ export default function SettingsPage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
+      {/* Add page logger for tracking access */}
+      <PageLogger pageName="settings" />
       <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
         <Sheet>
           <SheetTrigger asChild>
@@ -206,100 +209,18 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Additional Settings Sections */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Palette className="h-5 w-5" />
-                Appearance
-              </CardTitle>
-              <CardDescription>
-                Customize the look and feel of your admin panel.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Theme</Label>
-                  <Select defaultValue="system">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select theme" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="light">Light</SelectItem>
-                      <SelectItem value="dark">Dark</SelectItem>
-                      <SelectItem value="system">System</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button variant="outline" className="w-full">
-                  Customize Colors
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Payment
-              </CardTitle>
-              <CardDescription>
-                Configure payment methods and settings.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Default Currency</Label>
-                  <Select defaultValue="KES">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select currency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="KES">KES - Kenyan Shilling</SelectItem>
-                      <SelectItem value="USD">USD - US Dollar</SelectItem>
-                      <SelectItem value="EUR">EUR - Euro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button variant="outline" className="w-full">
-                  Payment Methods
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
-                Email
-              </CardTitle>
-              <CardDescription>
-                Configure email templates and settings.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Button variant="outline" className="w-full">
-                  Ticket Status Updates
-                </Button>
-                <Button variant="outline" className="w-full">
-                  Order Confirmations
-                </Button>
-                <Button variant="outline" className="w-full">
-                  Password Reset
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
         {/* Log Viewer */}
-        <LogViewer />
+        <Card>
+          <CardHeader>
+            <CardTitle>Activity Logs</CardTitle>
+            <CardDescription>
+              View recent activity and security events.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <LogViewer />
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

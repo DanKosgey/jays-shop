@@ -68,8 +68,20 @@ import {
 } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MobileNav } from "../components/mobile-nav";
+import { PageLogger } from "../components/page-logger";
 
-const statusVariant = {
+// Define the order type
+type Order = {
+  id: string;
+  order_number: string;
+  customer_name: string;
+  created_at: string;
+  status: string;
+  total_amount: number;
+  items?: any[];
+};
+
+const statusVariant: Record<string, any> = {
   pending: "outline",
   shipped: "secondary",
   delivered: "default",
@@ -79,10 +91,10 @@ const statusVariant = {
 const statusOptions = ['pending', 'shipped', 'delivered', 'cancelled'];
 
 export default function OrdersPage() {
-  const [allOrders, setAllOrders] = useState([]);
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
@@ -97,7 +109,7 @@ export default function OrdersPage() {
         if (!res.ok) throw new Error(`Failed to fetch orders: ${res.status}`);
         const json = await res.json();
         setAllOrders(json.orders || []);
-      } catch (e) {
+      } catch (e: any) {
         setError(e.message);
       } finally {
         setLoading(false);
@@ -111,7 +123,7 @@ export default function OrdersPage() {
   const deliveredOrders = sortedOrders.filter(o => o.status === 'delivered');
   const cancelledOrders = sortedOrders.filter(o => o.status === 'cancelled');
 
-  const handleEditClick = (order) => {
+  const handleEditClick = (order: Order) => {
       setSelectedOrder(order);
       setIsEditDialogOpen(true);
   };
@@ -120,7 +132,7 @@ export default function OrdersPage() {
   const totalPending = pendingOrders.length;
   const totalShipped = shippedOrders.length;
 
-  const renderOrderTable = (orders) => (
+  const renderOrderTable = (orders: Order[]) => (
     <Table>
       <TableHeader>
         <TableRow>
@@ -205,6 +217,8 @@ export default function OrdersPage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
+      {/* Add page logger for tracking access */}
+      <PageLogger pageName="orders" />
       <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
         <Sheet>
           <SheetTrigger asChild>
@@ -368,7 +382,7 @@ export default function OrdersPage() {
   );
 }
 
-function EditOrderForm({ order }) {
+function EditOrderForm({ order }: { order: Order }) {
   return (
     <div className="grid gap-4 py-4">
       <div className="grid grid-cols-4 items-center gap-4">

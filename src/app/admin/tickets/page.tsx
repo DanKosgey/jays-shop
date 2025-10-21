@@ -71,6 +71,7 @@ import { fetchTickets } from "@/lib/data-fetching";
 import { transformTicketsData } from "@/lib/data-transform";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MobileNav } from "../components/mobile-nav";
+import { PageLogger } from "../components/page-logger";
 
 const statusVariant: { [key in RepairTicket["status"]]: "default" | "secondary" | "destructive" | "outline" } = {
     received: "outline",
