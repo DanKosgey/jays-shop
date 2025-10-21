@@ -1,5 +1,11 @@
 'use server';
 
+import { config } from 'dotenv';
+import path from 'path';
+
+// Load environment variables from .env.local
+config({ path: path.resolve(process.cwd(), '.env.local') });
+
 import { 
   getAllProducts, 
   getProductCategories, 
@@ -15,9 +21,19 @@ import {
   bookAppointment
 } from './flows/ai-chatbot-customer-support';
 
+// Also load the Google API key if needed
+if (process.env.GENKIT_GOOGLE_API_KEY) {
+  process.env.GOOGLE_API_KEY = process.env.GENKIT_GOOGLE_API_KEY;
+}
+
 async function testTools() {
   try {
-    console.log('Testing getAllProducts tool...');
+    console.log('Environment variables loaded:');
+    console.log('- GENKIT_GOOGLE_API_KEY:', process.env.GENKIT_GOOGLE_API_KEY ? 'YES' : 'NO');
+    console.log('- GOOGLE_API_KEY:', process.env.GOOGLE_API_KEY ? 'YES' : 'NO');
+    console.log('- NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+    
+    console.log('\nTesting getAllProducts tool...');
     try {
       const products = await getAllProducts({ limit: 5 });
       console.log('Products:', products);
