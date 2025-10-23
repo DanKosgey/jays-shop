@@ -20,16 +20,17 @@ export async function GET(req: NextRequest) {
     // Log the query parameters
     console.log('[ADMIN_USERS_API] Query params:', { page, limit, from, to });
 
-    // Fetch users with their profiles
+    // Fetch users with their profiles by joining auth.users and profiles tables
     const { data: users, error: usersError, count } = await supabase
       .from('profiles')
       .select(`
         id,
         email,
         role,
-        full_name,
-        phone,
-        created_at
+        created_at,
+        user:auth.users (
+          user_metadata
+        )
       `, { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to);
@@ -42,8 +43,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch users', details: usersError.message }, { status: 500 });
     }
 
+    // Transform the data to match the expected format
+    const transformedUsers = users?.map(profile => ({
+      id: profile.id,
+      email: profile.email,
+      role: profile.role,
+      full_name: profile.user?.user_metadata?.full_name || profile.email?.split('@')[0] || 'User',
+      phone: profile.user?.user_metadata?.phone || null,
+      created_at: profile.created_at
+    })) || [];
+
     return NextResponse.json({
-      users,
+      users: transformedUsers,
       pagination: {
         page,
         limit,
