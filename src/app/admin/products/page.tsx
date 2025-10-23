@@ -752,7 +752,8 @@ function AddNewProductForm() {
       const fileName = `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.${fileExt}`;
       const filePath = `products/${fileName}`;
 
-      // Get Supabase client to ensure proper auth headers
+      // Import Supabase client dynamically to avoid potential import issues
+      const { getSupabaseBrowserClient } = await import('@/server/supabase/client');
       const supabase = getSupabaseBrowserClient();
       
       // Create signed upload URL using Supabase client
@@ -1085,7 +1086,8 @@ function AddSecondHandItemForm() {
       const fileName = `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.${fileExt}`;
       const filePath = `products/${fileName}`;
 
-      // Get Supabase client to ensure proper auth headers
+      // Import Supabase client dynamically to avoid potential import issues
+      const { getSupabaseBrowserClient } = await import('@/server/supabase/client');
       const supabase = getSupabaseBrowserClient();
       
       // Create signed upload URL using Supabase client
