@@ -439,6 +439,15 @@ export default function DashboardPage() {
 
   // Enhanced WebSocket connection with reconnection logic
   useEffect(() => {
+    // Check if WebSocket feature is enabled
+    const enableWebSocket = false; // Disabled due to server integration issues
+    
+    if (!enableWebSocket) {
+      // Set connection status to indicate WebSocket is disabled but other real-time features work
+      setConnectionStatus('connected'); // Supabase subscriptions still work
+      return;
+    }
+    
     const connectWebSocket = () => {
       if (typeof window === 'undefined') return;
       
@@ -519,6 +528,11 @@ export default function DashboardPage() {
           console.error('[DASHBOARD] WebSocket error:', error);
           setIsConnected(false);
           setConnectionStatus('error');
+          
+          // Don't attempt to reconnect immediately on error to prevent rapid reconnect loops
+          if (isComponentMounted.current) {
+            setTimeout(connectWebSocket, 10000); // Try again after 10 seconds
+          }
         };
       } catch (error) {
         console.error('[DASHBOARD] Error establishing WebSocket connection:', error);
@@ -526,7 +540,7 @@ export default function DashboardPage() {
         
         // Attempt to reconnect after 5 seconds
         if (isComponentMounted.current) {
-          setTimeout(connectWebSocket, 5000);
+          setTimeout(connectWebSocket, 10000); // Try again after 10 seconds
         }
       }
     };
@@ -696,7 +710,7 @@ export default function DashboardPage() {
             variant={connectionStatus === 'connected' ? 'default' : connectionStatus === 'error' ? 'destructive' : 'secondary'}
             className="hidden sm:flex"
           >
-            {connectionStatus === 'connected' ? 'Live' : 
+            {connectionStatus === 'connected' ? 'Live Updates' : 
              connectionStatus === 'connecting' ? 'Connecting...' : 
              connectionStatus === 'error' ? 'Connection Error' : 'Disconnected'}
           </Badge>

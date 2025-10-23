@@ -57,6 +57,7 @@ import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MobileNav } from "../components/mobile-nav";
 import { PageLogger } from "../components/page-logger";
+import { getSupabaseBrowserClient } from "@/server/supabase/client";
 
 function EditProductForm({ product, onUpdate }: { product: Product; onUpdate: (updatedProduct: any) => void }) {
   const [name, setName] = useState(product.name);
