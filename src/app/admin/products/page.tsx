@@ -662,15 +662,141 @@ function AddNewProductForm() {
   const [price, setPrice] = useState('');
   const [stock, setStock] = useState('');
   const [description, setDescription] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setFieldErrors(prev => ({ ...prev, image: 'Please select an image file' }));
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setFieldErrors(prev => ({ ...prev, image: 'Image size must be less than 5MB' }));
+        return;
+      }
+      
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.image;
+        return newErrors;
+      });
+      
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!name.trim()) {
+      errors.name = 'Product name is required';
+    } else if (name.length < 3) {
+      errors.name = 'Product name must be at least 3 characters';
+    }
+    
+    if (!category.trim()) {
+      errors.category = 'Category is required';
+    }
+    
+    if (!price) {
+      errors.price = 'Price is required';
+    } else if (isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
+      errors.price = 'Price must be a positive number';
+    }
+    
+    if (stock && (isNaN(parseInt(stock)) || parseInt(stock) < 0)) {
+      errors.stock = 'Stock must be a non-negative number';
+    }
+    
+    if (!description.trim()) {
+      errors.description = 'Description is required';
+    } else if (description.length < 10) {
+      errors.description = 'Description must be at least 10 characters';
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const uploadImage = async (file: File, productName: string): Promise<string | null> => {
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.${fileExt}`;
+      const filePath = `products/${fileName}`;
+
+      const response = await fetch('/api/storage/sign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bucket: 'products',
+          filePath,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get upload URL');
+      }
+
+      const { url, fullPath } = await response.json();
+
+      const uploadResponse = await fetch(url, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      // Return the public URL
+      return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/products/${fileName}`;
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+    
     setLoading(true);
     setError(null);
 
     try {
+      let imageUrl = '/placeholder.svg';
+      
+      // Upload image if provided
+      if (imageFile && name) {
+        imageUrl = (await uploadImage(imageFile, name)) || imageUrl;
+      }
+
       // Prepare data according to schema
       const productData = {
         name,
@@ -678,7 +804,7 @@ function AddNewProductForm() {
         price: parseFloat(price),
         stock_quantity: stock ? parseInt(stock) : 0,
         description,
-        image_url: '/placeholder.svg', // Default image
+        image_url: imageUrl,
         is_featured: false, // Default value
       };
 
@@ -715,9 +841,20 @@ function AddNewProductForm() {
             id="product-name" 
             placeholder="e.g., Volta-Charge 100W PD Station" 
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (fieldErrors.name) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.name;
+                  return newErrors;
+                });
+              }
+            }}
+            className={fieldErrors.name ? 'border-red-500' : ''}
             required
           />
+          {fieldErrors.name && <p className="text-sm text-red-500">{fieldErrors.name}</p>}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="product-category">Category</Label>
@@ -725,8 +862,19 @@ function AddNewProductForm() {
             id="product-category" 
             placeholder="e.g., Chargers" 
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            onChange={(e) => {
+              setCategory(e.target.value);
+              if (fieldErrors.category) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.category;
+                  return newErrors;
+                });
+              }
+            }}
+            className={fieldErrors.category ? 'border-red-500' : ''}
           />
+          {fieldErrors.category && <p className="text-sm text-red-500">{fieldErrors.category}</p>}
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="grid gap-2">
@@ -736,9 +884,20 @@ function AddNewProductForm() {
               type="number" 
               placeholder="e.g., 8000" 
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={(e) => {
+                setPrice(e.target.value);
+                if (fieldErrors.price) {
+                  setFieldErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.price;
+                    return newErrors;
+                  });
+                }
+              }}
+              className={fieldErrors.price ? 'border-red-500' : ''}
               required
             />
+            {fieldErrors.price && <p className="text-sm text-red-500">{fieldErrors.price}</p>}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="product-stock">Stock Quantity</Label>
@@ -747,8 +906,19 @@ function AddNewProductForm() {
               type="number" 
               placeholder="e.g., 50" 
               value={stock}
-              onChange={(e) => setStock(e.target.value)}
+              onChange={(e) => {
+                setStock(e.target.value);
+                if (fieldErrors.stock) {
+                  setFieldErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.stock;
+                    return newErrors;
+                  });
+                }
+              }}
+              className={fieldErrors.stock ? 'border-red-500' : ''}
             />
+            {fieldErrors.stock && <p className="text-sm text-red-500">{fieldErrors.stock}</p>}
           </div>
         </div>
         <div className="grid gap-2">
@@ -756,15 +926,48 @@ function AddNewProductForm() {
           <Textarea 
             id="product-description" 
             placeholder="Describe the product..." 
-            className="min-h-[100px]" 
+            className={`min-h-[100px] ${fieldErrors.description ? 'border-red-500' : ''}`}
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              if (fieldErrors.description) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.description;
+                  return newErrors;
+                });
+              }
+            }}
             required
           />
+          {fieldErrors.description && <p className="text-sm text-red-500">{fieldErrors.description}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="product-image">Product Image</Label>
+          <Input 
+            id="product-image" 
+            type="file" 
+            accept="image/*"
+            onChange={handleImageChange}
+            className={fieldErrors.image ? 'border-red-500' : ''}
+          />
+          {imagePreview && (
+            <div className="mt-2">
+              <Image 
+                src={imagePreview} 
+                alt="Preview" 
+                width={100} 
+                height={100} 
+                className="object-cover rounded-md"
+              />
+            </div>
+          )}
+          {fieldErrors.image && <p className="text-sm text-red-500">{fieldErrors.image}</p>}
+          {uploading && <p className="text-sm text-muted-foreground">Uploading image...</p>}
         </div>
         {error && <div className="text-sm text-destructive text-center">{error}</div>}
-        <Button type="submit" disabled={loading}>
-          {loading ? 'Creating...' : 'Add New Product'}
+        <Button type="submit" disabled={loading || uploading}>
+          {loading || uploading ? 'Creating...' : 'Add New Product'}
         </Button>
       </div>
     </form>
@@ -778,15 +981,143 @@ function AddSecondHandItemForm() {
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [sellerName, setSellerName] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setFieldErrors(prev => ({ ...prev, image: 'Please select an image file' }));
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setFieldErrors(prev => ({ ...prev, image: 'Image size must be less than 5MB' }));
+        return;
+      }
+      
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.image;
+        return newErrors;
+      });
+      
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!name.trim()) {
+      errors.name = 'Item name is required';
+    } else if (name.length < 3) {
+      errors.name = 'Item name must be at least 3 characters';
+    }
+    
+    if (!category.trim()) {
+      errors.category = 'Category is required';
+    }
+    
+    if (!price) {
+      errors.price = 'Price is required';
+    } else if (isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
+      errors.price = 'Price must be a positive number';
+    }
+    
+    if (!description.trim()) {
+      errors.description = 'Description is required';
+    } else if (description.length < 10) {
+      errors.description = 'Description must be at least 10 characters';
+    }
+    
+    if (!sellerName.trim()) {
+      errors.sellerName = 'Seller name is required';
+    } else if (sellerName.length < 2) {
+      errors.sellerName = 'Seller name must be at least 2 characters';
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const uploadImage = async (file: File, productName: string): Promise<string | null> => {
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.${fileExt}`;
+      const filePath = `products/${fileName}`;
+
+      const response = await fetch('/api/storage/sign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bucket: 'products',
+          filePath,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get upload URL');
+      }
+
+      const { url, fullPath } = await response.json();
+
+      const uploadResponse = await fetch(url, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      // Return the public URL
+      return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/products/${fileName}`;
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+    
     setLoading(true);
     setError(null);
 
     try {
+      let imageUrl = '/placeholder.svg';
+      
+      // Upload image if provided
+      if (imageFile && name) {
+        imageUrl = (await uploadImage(imageFile, name)) || imageUrl;
+      }
+
       // First, create a regular product
       const productData = {
         name,
@@ -794,7 +1125,7 @@ function AddSecondHandItemForm() {
         price: parseFloat(price),
         stock_quantity: 1, // Second-hand items typically have quantity of 1
         description,
-        image_url: '/placeholder.svg', // Default image
+        image_url: imageUrl,
         is_featured: false, // Default value
       };
 
@@ -851,9 +1182,20 @@ function AddSecondHandItemForm() {
             id="item-name" 
             placeholder="e.g., Used iPhone 12 Pro" 
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (fieldErrors.name) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.name;
+                  return newErrors;
+                });
+              }
+            }}
+            className={fieldErrors.name ? 'border-red-500' : ''}
             required
           />
+          {fieldErrors.name && <p className="text-sm text-red-500">{fieldErrors.name}</p>}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="item-category">Category</Label>
@@ -861,14 +1203,25 @@ function AddSecondHandItemForm() {
             id="item-category" 
             placeholder="e.g., Smartphones" 
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            onChange={(e) => {
+              setCategory(e.target.value);
+              if (fieldErrors.category) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.category;
+                  return newErrors;
+                });
+              }
+            }}
+            className={fieldErrors.category ? 'border-red-500' : ''}
           />
+          {fieldErrors.category && <p className="text-sm text-red-500">{fieldErrors.category}</p>}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="item-condition">Condition</Label>
           <select 
             id="item-condition" 
-            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className={`flex h-10 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${fieldErrors.condition ? 'border-red-500' : ''}`}
             value={condition}
             onChange={(e) => setCondition(e.target.value)}
           >
@@ -884,9 +1237,20 @@ function AddSecondHandItemForm() {
             type="number" 
             placeholder="e.g., 60000" 
             value={price}
-            onChange={(e) => setPrice(e.target.value)}
+            onChange={(e) => {
+              setPrice(e.target.value);
+              if (fieldErrors.price) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.price;
+                  return newErrors;
+                });
+              }
+            }}
+            className={fieldErrors.price ? 'border-red-500' : ''}
             required
           />
+          {fieldErrors.price && <p className="text-sm text-red-500">{fieldErrors.price}</p>}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="seller-name">Seller Name</Label>
@@ -894,23 +1258,67 @@ function AddSecondHandItemForm() {
             id="seller-name" 
             placeholder="e.g., John Doe" 
             value={sellerName}
-            onChange={(e) => setSellerName(e.target.value)}
+            onChange={(e) => {
+              setSellerName(e.target.value);
+              if (fieldErrors.sellerName) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.sellerName;
+                  return newErrors;
+                });
+              }
+            }}
+            className={fieldErrors.sellerName ? 'border-red-500' : ''}
             required
           />
+          {fieldErrors.sellerName && <p className="text-sm text-red-500">{fieldErrors.sellerName}</p>}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="item-description">Description</Label>
           <Textarea 
             id="item-description" 
             placeholder="Describe the item, including any wear and tear." 
-            className="min-h-[100px]" 
+            className={`min-h-[100px] ${fieldErrors.description ? 'border-red-500' : ''}`}
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              if (fieldErrors.description) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.description;
+                  return newErrors;
+                });
+              }
+            }}
             required
           />
+          {fieldErrors.description && <p className="text-sm text-red-500">{fieldErrors.description}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="item-image">Product Image</Label>
+          <Input 
+            id="item-image" 
+            type="file" 
+            accept="image/*"
+            onChange={handleImageChange}
+            className={fieldErrors.image ? 'border-red-500' : ''}
+          />
+          {imagePreview && (
+            <div className="mt-2">
+              <Image 
+                src={imagePreview} 
+                alt="Preview" 
+                width={100} 
+                height={100} 
+                className="object-cover rounded-md"
+              />
+            </div>
+          )}
+          {fieldErrors.image && <p className="text-sm text-red-500">{fieldErrors.image}</p>}
+          {uploading && <p className="text-sm text-muted-foreground">Uploading image...</p>}
         </div>
         {error && <div className="text-sm text-destructive text-center">{error}</div>}
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading || uploading}>
           {loading ? 'Adding...' : 'Add Product to Marketplace'}
         </Button>
       </div>

@@ -1,12 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { config } from 'dotenv';
+config({ path: '.env.local' });
 
 async function testImageUpload() {
   try {
+    // Initialize Supabase client
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    console.log('Supabase URL:', supabaseUrl);
+    console.log('Supabase Key:', supabaseKey ? 'Key is set' : 'Key is not set');
+
     // Test creating a signed upload URL
     const { data, error } = await supabase.storage
       .from('products')
