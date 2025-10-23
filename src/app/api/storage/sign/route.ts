@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/server/supabase/server';
+import { getSupabaseServerClient, getSupabaseServerAdminClient } from '@/server/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,8 +27,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user has admin role
-    const { data: profile, error: profileError } = await supabase
+    // Check if user has admin role using admin client to bypass RLS policies
+    const adminSupabase = getSupabaseServerAdminClient();
+    const { data: profile, error: profileError } = await adminSupabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)

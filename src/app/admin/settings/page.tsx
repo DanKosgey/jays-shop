@@ -87,12 +87,23 @@ export default function SettingsPage() {
     const fetchUsers = async () => {
       try {
         setLoadingUsers(true);
+        console.log('[ADMIN_SETTINGS] Fetching users from API');
         const res = await fetch('/api/admin/users');
-        if (!res.ok) throw new Error('Failed to fetch users');
+        console.log('[ADMIN_SETTINGS] API response status:', res.status);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('[ADMIN_SETTINGS] API error response:', errorText);
+          throw new Error(`Failed to fetch users: ${res.status} ${res.statusText}`);
+        }
+        
         const data = await res.json();
+        console.log('[ADMIN_SETTINGS] API success response:', data);
         setUsers(data.users);
       } catch (error) {
-        console.error('Error fetching users:', error);
+        console.error('[ADMIN_SETTINGS] Error fetching users:', error);
+        // Display error to user
+        alert(`Error fetching users: ${(error as Error).message}`);
       } finally {
         setLoadingUsers(false);
       }

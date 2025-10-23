@@ -16,9 +16,14 @@ ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (
   bucket_id = 'products' AND
-  EXISTS (
-    SELECT 1 FROM public.profiles p 
-    WHERE p.id = auth.uid() AND p.role = 'admin'
+  (
+    EXISTS (
+      SELECT 1 FROM public.profiles p 
+      WHERE p.id = auth.uid() AND p.role = 'admin'
+    )
+    OR 
+    -- Allow service role key access
+    current_user = 'authenticator' AND current_setting('role') = 'service_role'
   )
 );
 
@@ -32,9 +37,14 @@ ON storage.objects FOR UPDATE
 TO authenticated
 USING (
   bucket_id = 'products' AND
-  EXISTS (
-    SELECT 1 FROM public.profiles p 
-    WHERE p.id = auth.uid() AND p.role = 'admin'
+  (
+    EXISTS (
+      SELECT 1 FROM public.profiles p 
+      WHERE p.id = auth.uid() AND p.role = 'admin'
+    )
+    OR 
+    -- Allow service role key access
+    current_user = 'authenticator' AND current_setting('role') = 'service_role'
   )
 );
 
@@ -43,8 +53,13 @@ ON storage.objects FOR DELETE
 TO authenticated
 USING (
   bucket_id = 'products' AND
-  EXISTS (
-    SELECT 1 FROM public.profiles p 
-    WHERE p.id = auth.uid() AND p.role = 'admin'
+  (
+    EXISTS (
+      SELECT 1 FROM public.profiles p 
+      WHERE p.id = auth.uid() AND p.role = 'admin'
+    )
+    OR 
+    -- Allow service role key access
+    current_user = 'authenticator' AND current_setting('role') = 'service_role'
   )
 );

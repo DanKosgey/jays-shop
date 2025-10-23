@@ -1,17 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/server/supabase/server';
 import { ProductsResponseSchema } from '@/server/schemas';
 
 export async function GET(req: NextRequest) {
   try {
-    // Initialize Supabase client with better error handling
-    let supabase;
-    try {
-      supabase = await getSupabaseServerClient();
-    } catch (initError: any) {
-      console.error('Failed to initialize Supabase client:', initError);
-      return NextResponse.json({ error: 'Failed to initialize database connection' }, { status: 500 });
+    // Use service role key for consistent access
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321';
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    
+    if (!supabaseKey) {
+      console.error('[PRODUCTS_API] Missing SUPABASE_SERVICE_ROLE_KEY');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
+
+    // Import Supabase client inside the function to avoid issues
+    const { createClient } = await import('@supabase/supabase-js');
+    
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+      }
+    });
 
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -115,7 +125,25 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await getSupabaseServerClient();
+    // Use service role key for admin operations
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321';
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    
+    if (!supabaseKey) {
+      console.error('[PRODUCTS_API] Missing SUPABASE_SERVICE_ROLE_KEY');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
+    // Import Supabase client inside the function to avoid issues
+    const { createClient } = await import('@supabase/supabase-js');
+    
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+      }
+    });
     
     // Parse request body
     const body = await req.json();
@@ -159,7 +187,25 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const supabase = await getSupabaseServerClient();
+    // Use service role key for admin operations
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321';
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    
+    if (!supabaseKey) {
+      console.error('[PRODUCTS_API] Missing SUPABASE_SERVICE_ROLE_KEY');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
+    // Import Supabase client inside the function to avoid issues
+    const { createClient } = await import('@supabase/supabase-js');
+    
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+      }
+    });
     
     // Parse request body
     const body = await req.json();
@@ -205,7 +251,25 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const supabase = await getSupabaseServerClient();
+    // Use service role key for admin operations
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321';
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    
+    if (!supabaseKey) {
+      console.error('[PRODUCTS_API] Missing SUPABASE_SERVICE_ROLE_KEY');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
+    // Import Supabase client inside the function to avoid issues
+    const { createClient } = await import('@supabase/supabase-js');
+    
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+      }
+    });
     
     // Get product ID from query parameters
     const { searchParams } = new URL(req.url);

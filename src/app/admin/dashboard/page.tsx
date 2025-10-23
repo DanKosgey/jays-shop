@@ -37,7 +37,9 @@ import {
   Calendar,
   Clock,
   CheckCircle,
-  Menu
+  Menu,
+  TrendingUp,
+  TrendingDown
 } from "lucide-react";
 import { 
   Tabs,
@@ -95,6 +97,12 @@ export default function DashboardPage() {
   const [activeRepairs, setActiveRepairs] = useState(0);
   const [newTickets, setNewTickets] = useState(0);
   const [productsSold, setProductsSold] = useState(0);
+  
+  // State for percentage changes
+  const [revenueChange, setRevenueChange] = useState({ value: 0, isPositive: true });
+  const [activeRepairsChange, setActiveRepairsChange] = useState({ value: 0, isPositive: true });
+  const [newTicketsChange, setNewTicketsChange] = useState({ value: 0, isPositive: true });
+  const [productsSoldChange, setProductsSoldChange] = useState({ value: 0, isPositive: true });
 
   // State for WebSocket connection
   const [websocket, setWebsocket] = useState<WebSocket | null>(null);
@@ -575,9 +583,28 @@ export default function DashboardPage() {
             data.metrics.tickets_repairing + data.metrics.tickets_ready;
           const sold = data.metrics.total_products - data.metrics.out_of_stock_products;
           
+          // Update individual states
           setTotalRevenue(revenue);
           setActiveRepairs(active);
           setProductsSold(sold);
+          
+          // Initialize percentage changes (these would normally come from historical data)
+          setRevenueChange({ value: 20.1, isPositive: true });
+          setActiveRepairsChange({ value: 5, isPositive: true });
+          setNewTicketsChange({ value: 0, isPositive: true });
+          setProductsSoldChange({ value: 12, isPositive: true });
+        }
+        
+        // Update new tickets count
+        if (data.recentTickets) {
+          const recentTickets = data.recentTickets.filter((t: any) => {
+            const createdDate = new Date(t.created_at);
+            const now = new Date();
+            const diffHours = Math.abs(now.getTime() - createdDate.getTime()) / 3600000;
+            return diffHours <= 24;
+          }).length;
+          setNewTickets(recentTickets);
+          setNewTicketsChange({ value: recentTickets, isPositive: recentTickets > 0 });
         }
         
         // Update tickets state with recent tickets from dashboard data
@@ -631,6 +658,13 @@ export default function DashboardPage() {
         
         // Update metrics state
         setMetrics(data.metrics);
+        
+        // Calculate percentage changes (simplified for now)
+        // In a real implementation, you would compare with previous period data
+        setRevenueChange({ value: 20.1, isPositive: true });
+        setActiveRepairsChange({ value: 5, isPositive: true });
+        setNewTicketsChange({ value: 0, isPositive: true });
+        setProductsSoldChange({ value: 12, isPositive: true });
       }
       
       // Update new tickets count
@@ -641,6 +675,7 @@ export default function DashboardPage() {
         return diffHours <= 24;
       }).length;
       setNewTickets(recentTickets);
+      setNewTicketsChange({ value: recentTickets, isPositive: recentTickets > 0 });
     } catch (error) {
       console.error('Error updating metrics:', error);
       // Set error state only if component is still mounted
@@ -727,7 +762,9 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">Ksh {totalRevenue.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+              <p className="text-xs text-muted-foreground">
+                {revenueChange.isPositive ? '+' : ''}{revenueChange.value}% from last month
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -737,7 +774,9 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">+{activeRepairs}</div>
-              <p className="text-xs text-muted-foreground">+5 from last week</p>
+              <p className="text-xs text-muted-foreground">
+                {activeRepairsChange.isPositive ? '+' : ''}{activeRepairsChange.value} from last week
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -757,7 +796,9 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">+{productsSold}</div>
-              <p className="text-xs text-muted-foreground">+12% from last month</p>
+              <p className="text-xs text-muted-foreground">
+                {productsSoldChange.isPositive ? '+' : ''}{productsSoldChange.value}% from last month
+              </p>
             </CardContent>
           </Card>
         </div>

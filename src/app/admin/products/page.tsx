@@ -752,21 +752,28 @@ function AddNewProductForm() {
       const fileName = `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.${fileExt}`;
       const filePath = `products/${fileName}`;
 
-      // Import Supabase client dynamically to avoid potential import issues
-      const { getSupabaseBrowserClient } = await import('@/server/supabase/client');
-      const supabase = getSupabaseBrowserClient();
-      
-      // Create signed upload URL using Supabase client
-      const { data, error } = await supabase.storage
-        .from('products')
-        .createSignedUploadUrl(filePath);
+      // Use the API endpoint to generate a signed upload URL
+      // This endpoint uses the service role key which bypasses RLS policies
+      const response = await fetch('/api/storage/sign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bucket: 'products',
+          filePath,
+        }),
+      });
 
-      if (error) {
-        throw new Error(`Failed to get upload URL: ${error.message}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Failed to get upload URL: ${errorData.error || 'Unknown error'}`);
       }
 
+      const { url, fullPath } = await response.json();
+
       // Upload the file using the signed URL
-      const uploadResponse = await fetch(data.signedUrl, {
+      const uploadResponse = await fetch(url, {
         method: 'PUT',
         body: file,
         headers: {
@@ -1086,21 +1093,28 @@ function AddSecondHandItemForm() {
       const fileName = `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.${fileExt}`;
       const filePath = `products/${fileName}`;
 
-      // Import Supabase client dynamically to avoid potential import issues
-      const { getSupabaseBrowserClient } = await import('@/server/supabase/client');
-      const supabase = getSupabaseBrowserClient();
-      
-      // Create signed upload URL using Supabase client
-      const { data, error } = await supabase.storage
-        .from('products')
-        .createSignedUploadUrl(filePath);
+      // Use the API endpoint to generate a signed upload URL
+      // This endpoint uses the service role key which bypasses RLS policies
+      const response = await fetch('/api/storage/sign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bucket: 'products',
+          filePath,
+        }),
+      });
 
-      if (error) {
-        throw new Error(`Failed to get upload URL: ${error.message}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Failed to get upload URL: ${errorData.error || 'Unknown error'}`);
       }
 
+      const { url, fullPath } = await response.json();
+
       // Upload the file using the signed URL
-      const uploadResponse = await fetch(data.signedUrl, {
+      const uploadResponse = await fetch(url, {
         method: 'PUT',
         body: file,
         headers: {

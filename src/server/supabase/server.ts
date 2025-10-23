@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { getEnv } from '@/server/env';
 
 export async function getSupabaseServerClient() {
@@ -49,5 +50,41 @@ export async function getSupabaseServerClient() {
       },
     },
   });
+  return client;
+}
+
+// For server-side operations that need elevated privileges, use this client
+export function getSupabaseServerAdminClient() {
+  let env;
+  try {
+    env = getEnv();
+  } catch (error) {
+    console.warn('Failed to get environment variables:', error);
+    // Use fallback values
+    env = {
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321',
+      SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-key',
+    };
+  }
+  
+  // Ensure we have valid strings for the Supabase client
+  const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321';
+  const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-key';
+  
+  // Check if we have valid values
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('[SERVER_ADMIN_CLIENT] Missing Supabase configuration:', { supabaseUrl, supabaseKey });
+    throw new Error('Missing Supabase configuration for server admin client');
+  }
+  
+  // Create a client with the service role key for elevated privileges
+  const client = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false
+    }
+  });
+  
   return client;
 }
