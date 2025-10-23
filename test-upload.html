@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Upload</title>
+</head>
+<body>
+    <h1>Test Image Upload</h1>
+    <input type="file" id="fileInput" accept="image/*" />
+    <button id="uploadBtn">Upload</button>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('uploadBtn').addEventListener('click', async () => {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+            
+            try {
+                // Step 1: Get signed upload URL
+                const response = await fetch('/api/storage/sign', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        bucket: 'products',
+                        filePath: `test/${file.name}`,
+                    }),
+                });
+                
+                const result = await response.json();
+                console.log('Sign response:', result);
+                
+                if (!response.ok) {
+                    document.getElementById('result').innerHTML = `<p>Error: ${result.error}</p>`;
+                    return;
+                }
+                
+                // Step 2: Upload file using signed URL
+                const uploadResponse = await fetch(result.url, {
+                    method: 'PUT',
+                    body: file,
+                    headers: {
+                        'Content-Type': file.type,
+                    },
+                });
+                
+                if (!uploadResponse.ok) {
+                    document.getElementById('result').innerHTML = `<p>Upload failed: ${uploadResponse.status}</p>`;
+                    return;
+                }
+                
+                document.getElementById('result').innerHTML = '<p>Upload successful!</p>';
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -49,8 +49,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Create Supabase client with service role key for storage operations
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321';
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    
+    if (!supabaseKey) {
+      console.error('[STORAGE_SIGN] Missing SUPABASE_SERVICE_ROLE_KEY');
+      return NextResponse.json(
+        { error: 'Server configuration error' }, 
+        { status: 500 }
+      );
+    }
+
+    // Import Supabase client inside the function to avoid issues
+    const { createClient } = await import('@supabase/supabase-js');
+    
+    const serviceSupabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+      }
+    });
+
     // Generate signed URL for upload
-    const { data, error } = await supabase.storage
+    const { data, error } = await serviceSupabase.storage
       .from(bucket)
       .createSignedUploadUrl(filePath);
 

@@ -1,10 +1,7 @@
-// Test script for storage API functionality
-async function testStorageAPI() {
+// Test the actual API endpoint
+async function testApiEndpoint() {
   try {
-    console.log('Testing storage sign API...');
-    
-    // First, let's test if we can access the admin products page
-    console.log('Checking if we can access admin products page...');
+    console.log('Testing storage sign API endpoint...');
     
     // Test the storage sign API
     const response = await fetch('http://localhost:9003/api/storage/sign', {
@@ -18,9 +15,18 @@ async function testStorageAPI() {
       }),
     });
     
-    const result = await response.json();
     console.log('Response status:', response.status);
-    console.log('Response data:', result);
+    
+    // Try to parse the response
+    let result;
+    try {
+      result = await response.json();
+      console.log('Response data:', result);
+    } catch (parseError) {
+      const text = await response.text();
+      console.log('Response text:', text);
+      return;
+    }
     
     if (!response.ok) {
       console.error('Failed to get signed upload URL:', result);
@@ -30,8 +36,8 @@ async function testStorageAPI() {
     console.log('Successfully got signed upload URL:', result);
     
   } catch (error) {
-    console.error('Error testing storage API:', error);
+    console.error('Error testing API endpoint:', error);
   }
 }
 
-testStorageAPI();
+testApiEndpoint();
