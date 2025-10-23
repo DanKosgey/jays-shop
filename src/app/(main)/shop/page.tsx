@@ -50,8 +50,8 @@ export default function ShopPage() {
     const fetchProductsData = async () => {
       try {
         setLoading(true);
-        const json = await fetchProducts();
-        const products = transformProductsData(json.products);
+        const response: any = await fetchProducts();
+        const products = transformProductsData(response.products);
         setProducts(products);
       } catch (e: any) {
         setError(e?.message || 'Failed to load products');

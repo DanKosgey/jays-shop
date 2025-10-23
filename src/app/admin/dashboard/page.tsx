@@ -47,7 +47,7 @@ import {
 } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { differenceInDays } from "date-fns";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { RepairTicket } from "@/lib/types";
 import { fetchTickets } from "@/lib/data-fetching";
@@ -89,6 +89,23 @@ export default function DashboardPage() {
   // Add new state for dashboard metrics
   const [metrics, setMetrics] = useState<any>(null);
   const [chartData, setChartData] = useState<any[]>([]);
+  
+  // State for real-time updates
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [activeRepairs, setActiveRepairs] = useState(0);
+  const [newTickets, setNewTickets] = useState(0);
+  const [productsSold, setProductsSold] = useState(0);
+
+  // State for WebSocket connection
+  const [websocket, setWebsocket] = useState<WebSocket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
+  
+  // Refs for managing real-time updates
+  const websocketRef = useRef<WebSocket | null>(null);
+  const supabaseRef = useRef<any>(null);
+  const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isComponentMounted = useRef(true);
 
   // Get user info and log dashboard access
   useEffect(() => {
@@ -108,8 +125,28 @@ export default function DashboardPage() {
     
     // Log dashboard exit when component unmounts
     return () => {
+      isComponentMounted.current = false;
       if (userId && userEmail) {
         logDashboardExit(userId, userEmail);
+      }
+      
+      // Clean up WebSocket connection
+      if (websocketRef.current) {
+        websocketRef.current.close();
+      }
+      
+      // Clean up Supabase subscriptions
+      if (supabaseRef.current) {
+        try {
+          supabaseRef.current.removeAllChannels();
+        } catch (error) {
+          console.log('[DASHBOARD] Error removing Supabase channels:', error);
+        }
+      }
+      
+      // Clean up update interval
+      if (updateIntervalRef.current) {
+        clearInterval(updateIntervalRef.current);
       }
     };
   }, [userId, userEmail]);
@@ -135,9 +172,10 @@ export default function DashboardPage() {
     };
   }, []);
 
-  // Subscribe to real-time events from Supabase
+  // Enhanced Supabase real-time subscriptions with better error handling
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
+    supabaseRef.current = supabase;
     
     // Check if we're in a browser environment and realtime is enabled
     if (typeof window === 'undefined') {
@@ -156,6 +194,8 @@ export default function DashboardPage() {
             table: 'tickets',
           },
           (payload: any) => {
+            if (!isComponentMounted.current) return;
+            
             const newTicket = payload.new;
             const newActivity = {
               id: Date.now(),
@@ -164,6 +204,9 @@ export default function DashboardPage() {
               time: new Date(newTicket.created_at),
             };
             setActivity(prev => [newActivity, ...prev].slice(0, 10));
+            
+            // Update metrics in real-time
+            updateMetrics();
           }
         )
         .on(
@@ -174,6 +217,8 @@ export default function DashboardPage() {
             table: 'tickets',
           },
           (payload: any) => {
+            if (!isComponentMounted.current) return;
+            
             const updatedTicket = payload.new;
             let description = '';
             let icon = <Wrench className="h-5 w-5 text-purple-500"/>;
@@ -195,15 +240,23 @@ export default function DashboardPage() {
               time: new Date(updatedTicket.updated_at),
             };
             setActivity(prev => [newActivity, ...prev].slice(0, 10));
+            
+            // Update metrics in real-time
+            updateMetrics();
           }
         )
         .subscribe((status: any) => {
+          if (!isComponentMounted.current) return;
+          
           if (status === 'SUBSCRIBED') {
             console.log('[DASHBOARD] Successfully subscribed to tickets changes');
+            setConnectionStatus('connected');
           } else if (status === 'CHANNEL_ERROR') {
             console.log('[DASHBOARD] Error subscribing to tickets changes');
+            setConnectionStatus('error');
           } else if (status === 'CLOSED') {
             console.log('[DASHBOARD] Closed subscription to tickets changes');
+            setConnectionStatus('disconnected');
           }
         });
 
@@ -218,6 +271,8 @@ export default function DashboardPage() {
             table: 'orders',
           },
           (payload: any) => {
+            if (!isComponentMounted.current) return;
+            
             const newOrder = payload.new;
             const newActivity = {
               id: Date.now(),
@@ -226,6 +281,9 @@ export default function DashboardPage() {
               time: new Date(newOrder.created_at),
             };
             setActivity(prev => [newActivity, ...prev].slice(0, 10));
+            
+            // Update metrics in real-time
+            updateMetrics();
           }
         )
         .on(
@@ -236,6 +294,8 @@ export default function DashboardPage() {
             table: 'orders',
           },
           (payload: any) => {
+            if (!isComponentMounted.current) return;
+            
             const updatedOrder = payload.new;
             const newActivity = {
               id: Date.now(),
@@ -244,9 +304,14 @@ export default function DashboardPage() {
               time: new Date(updatedOrder.updated_at),
             };
             setActivity(prev => [newActivity, ...prev].slice(0, 10));
+            
+            // Update metrics in real-time
+            updateMetrics();
           }
         )
         .subscribe((status: any) => {
+          if (!isComponentMounted.current) return;
+          
           if (status === 'SUBSCRIBED') {
             console.log('[DASHBOARD] Successfully subscribed to orders changes');
           } else if (status === 'CHANNEL_ERROR') {
@@ -267,6 +332,8 @@ export default function DashboardPage() {
             table: 'customers',
           },
           (payload: any) => {
+            if (!isComponentMounted.current) return;
+            
             const newCustomer = payload.new;
             const newActivity = {
               id: Date.now(),
@@ -275,9 +342,14 @@ export default function DashboardPage() {
               time: new Date(newCustomer.created_at),
             };
             setActivity(prev => [newActivity, ...prev].slice(0, 10));
+            
+            // Update metrics in real-time
+            updateMetrics();
           }
         )
         .subscribe((status: any) => {
+          if (!isComponentMounted.current) return;
+          
           if (status === 'SUBSCRIBED') {
             console.log('[DASHBOARD] Successfully subscribed to customers changes');
           } else if (status === 'CHANNEL_ERROR') {
@@ -298,6 +370,8 @@ export default function DashboardPage() {
             table: 'products',
           },
           (payload: any) => {
+            if (!isComponentMounted.current) return;
+            
             const newProduct = payload.new;
             const newActivity = {
               id: Date.now(),
@@ -306,9 +380,37 @@ export default function DashboardPage() {
               time: new Date(newProduct.created_at),
             };
             setActivity(prev => [newActivity, ...prev].slice(0, 10));
+            
+            // Update metrics in real-time
+            updateMetrics();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'products',
+          },
+          (payload: any) => {
+            if (!isComponentMounted.current) return;
+            
+            const updatedProduct = payload.new;
+            const newActivity = {
+              id: Date.now(),
+              icon: <Package className="h-5 w-5 text-red-500"/>,
+              description: `Product '${updatedProduct.name}' was updated.`,
+              time: new Date(updatedProduct.updated_at),
+            };
+            setActivity(prev => [newActivity, ...prev].slice(0, 10));
+            
+            // Update metrics in real-time
+            updateMetrics();
           }
         )
         .subscribe((status: any) => {
+          if (!isComponentMounted.current) return;
+          
           if (status === 'SUBSCRIBED') {
             console.log('[DASHBOARD] Successfully subscribed to products changes');
           } else if (status === 'CHANNEL_ERROR') {
@@ -331,7 +433,112 @@ export default function DashboardPage() {
       };
     } catch (error) {
       console.log('[DASHBOARD] Error setting up subscriptions:', error);
+      setConnectionStatus('error');
     }
+  }, []);
+
+  // Enhanced WebSocket connection with reconnection logic
+  useEffect(() => {
+    const connectWebSocket = () => {
+      if (typeof window === 'undefined') return;
+      
+      setConnectionStatus('connecting');
+      
+      try {
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}/api/admin/dashboard/ws`;
+        
+        const ws = new WebSocket(wsUrl);
+        websocketRef.current = ws;
+        setWebsocket(ws);
+        
+        ws.onopen = () => {
+          if (!isComponentMounted.current) return;
+          
+          console.log('[DASHBOARD] WebSocket connection established');
+          setIsConnected(true);
+          setConnectionStatus('connected');
+        };
+        
+        ws.onmessage = (event) => {
+          if (!isComponentMounted.current) return;
+          
+          try {
+            const data = JSON.parse(event.data);
+            
+            // Handle different types of real-time updates
+            if (data.type === 'metrics_update') {
+              setMetrics(data.metrics);
+              
+              // Update individual metric states
+              if (data.metrics) {
+                const revenue = data.metrics.total_repair_revenue + data.metrics.total_product_revenue;
+                const active = data.metrics.tickets_received + data.metrics.tickets_diagnosing + 
+                  data.metrics.tickets_repairing + data.metrics.tickets_ready;
+                const sold = data.metrics.total_products - data.metrics.out_of_stock_products;
+                
+                setTotalRevenue(revenue);
+                setActiveRepairs(active);
+                setProductsSold(sold);
+              }
+            } else if (data.type === 'chart_update') {
+              setChartData(data.chartData);
+            } else if (data.type === 'tickets_update') {
+              const transformedTickets: RepairTicket[] = transformTicketsData(data.tickets);
+              setTickets(transformedTickets);
+            } else if (data.type === 'activity_update') {
+              const newActivity = {
+                id: Date.now(),
+                icon: data.icon,
+                description: data.message,
+                time: new Date(),
+              };
+              setActivity(prev => [newActivity, ...prev].slice(0, 10));
+            }
+          } catch (error) {
+            console.error('[DASHBOARD] Error processing WebSocket message:', error);
+          }
+        };
+        
+        ws.onclose = () => {
+          if (!isComponentMounted.current) return;
+          
+          console.log('[DASHBOARD] WebSocket connection closed');
+          setIsConnected(false);
+          setConnectionStatus('disconnected');
+          
+          // Attempt to reconnect after 5 seconds
+          if (isComponentMounted.current) {
+            setTimeout(connectWebSocket, 5000);
+          }
+        };
+        
+        ws.onerror = (error) => {
+          if (!isComponentMounted.current) return;
+          
+          console.error('[DASHBOARD] WebSocket error:', error);
+          setIsConnected(false);
+          setConnectionStatus('error');
+        };
+      } catch (error) {
+        console.error('[DASHBOARD] Error establishing WebSocket connection:', error);
+        setConnectionStatus('error');
+        
+        // Attempt to reconnect after 5 seconds
+        if (isComponentMounted.current) {
+          setTimeout(connectWebSocket, 5000);
+        }
+      }
+    };
+    
+    connectWebSocket();
+    
+    // Cleanup WebSocket connection
+    return () => {
+      if (websocketRef.current) {
+        websocketRef.current.close();
+      }
+    };
   }, []);
 
   // Fetch initial dashboard data
@@ -342,8 +549,22 @@ export default function DashboardPage() {
         if (!response.ok) throw new Error('Failed to fetch dashboard data');
         const data = await response.json();
         
+        if (!isComponentMounted.current) return;
+        
         setMetrics(data.metrics);
         setChartData(data.chartData);
+        
+        // Update real-time state values
+        if (data.metrics) {
+          const revenue = data.metrics.total_repair_revenue + data.metrics.total_product_revenue;
+          const active = data.metrics.tickets_received + data.metrics.tickets_diagnosing + 
+            data.metrics.tickets_repairing + data.metrics.tickets_ready;
+          const sold = data.metrics.total_products - data.metrics.out_of_stock_products;
+          
+          setTotalRevenue(revenue);
+          setActiveRepairs(active);
+          setProductsSold(sold);
+        }
         
         // Update tickets state with recent tickets from dashboard data
         const transformedTickets: RepairTicket[] = transformTicketsData(data.recentTickets);
@@ -358,12 +579,81 @@ export default function DashboardPage() {
         console.error('Error fetching dashboard data:', error);
         setError('Failed to load dashboard data');
       } finally {
-        setLoading(false);
+        if (isComponentMounted.current) {
+          setLoading(false);
+        }
       }
     };
 
     fetchDashboardData();
   }, []);
+
+  // Enhanced updateMetrics function with loading states and fallback mechanisms
+  const updateMetrics = async () => {
+    try {
+      // If WebSocket is connected, send a request through WebSocket
+      if (isConnected && websocketRef.current && websocketRef.current.readyState === WebSocket.OPEN) {
+        websocketRef.current.send(JSON.stringify({ type: 'request_metrics_update' }));
+        return;
+      }
+      
+      // Fallback to HTTP request if WebSocket is not available
+      const response = await fetch('/api/admin/dashboard', { method: 'POST' });
+      if (!response.ok) throw new Error('Failed to fetch updated metrics');
+      const data = await response.json();
+      
+      if (!isComponentMounted.current) return;
+      
+      if (data.metrics) {
+        const revenue = data.metrics.total_repair_revenue + data.metrics.total_product_revenue;
+        const active = data.metrics.tickets_received + data.metrics.tickets_diagnosing + 
+          data.metrics.tickets_repairing + data.metrics.tickets_ready;
+        const sold = data.metrics.total_products - data.metrics.out_of_stock_products;
+        
+        // Update individual states
+        setTotalRevenue(revenue);
+        setActiveRepairs(active);
+        setProductsSold(sold);
+        
+        // Update metrics state
+        setMetrics(data.metrics);
+      }
+      
+      // Update new tickets count
+      const recentTickets = tickets.filter(t => {
+        const createdDate = new Date(t.createdAt);
+        const now = new Date();
+        const diffHours = Math.abs(now.getTime() - createdDate.getTime()) / 3600000;
+        return diffHours <= 24;
+      }).length;
+      setNewTickets(recentTickets);
+    } catch (error) {
+      console.error('Error updating metrics:', error);
+      // Set error state only if component is still mounted
+      if (isComponentMounted.current) {
+        setError('Failed to update dashboard metrics');
+      }
+    }
+  };
+
+  // Update new tickets count periodically as fallback
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!isComponentMounted.current) return;
+      
+      const recentTickets = tickets.filter(t => {
+        const createdDate = new Date(t.createdAt);
+        const now = new Date();
+        const diffHours = Math.abs(now.getTime() - createdDate.getTime()) / 3600000;
+        return diffHours <= 24;
+      }).length;
+      setNewTickets(recentTickets);
+    }, 60000); // Update every minute
+    
+    updateIntervalRef.current = interval;
+    
+    return () => clearInterval(interval);
+  }, [tickets]);
 
   const recentTickets = [...tickets]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -380,18 +670,6 @@ export default function DashboardPage() {
       .map((n) => n[0])
       .join("");
   };
-
-  // Calculate stats from real data
-  const totalRevenue = metrics ? metrics.total_repair_revenue + metrics.total_product_revenue : 0;
-  const activeRepairs = metrics ? metrics.tickets_received + metrics.tickets_diagnosing + 
-    metrics.tickets_repairing + metrics.tickets_ready : 0;
-  const newTickets = tickets.filter(t => {
-    const createdDate = new Date(t.createdAt);
-    const now = new Date();
-    const diffHours = Math.abs(now.getTime() - createdDate.getTime()) / 3600000;
-    return diffHours <= 24;
-  }).length;
-  const productsSold = metrics ? metrics.total_products - metrics.out_of_stock_products : 0;
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -412,6 +690,15 @@ export default function DashboardPage() {
           <Badge variant="secondary" className="hidden sm:flex">
             <Calendar className="mr-1 h-3 w-3" />
             Today
+          </Badge>
+          {/* Connection status indicator */}
+          <Badge 
+            variant={connectionStatus === 'connected' ? 'default' : connectionStatus === 'error' ? 'destructive' : 'secondary'}
+            className="hidden sm:flex"
+          >
+            {connectionStatus === 'connected' ? 'Live' : 
+             connectionStatus === 'connecting' ? 'Connecting...' : 
+             connectionStatus === 'error' ? 'Connection Error' : 'Disconnected'}
           </Badge>
         </div>
       </header>

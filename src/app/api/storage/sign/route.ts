@@ -17,6 +17,38 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Get user info to check role
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not authenticated' }, 
+        { status: 401 }
+      );
+    }
+
+    // Check if user has admin role
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) {
+      console.error('Error fetching user profile:', profileError);
+      return NextResponse.json(
+        { error: 'Failed to verify user permissions' }, 
+        { status: 500 }
+      );
+    }
+
+    if (profile.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Insufficient permissions: only admins can upload images' }, 
+        { status: 403 }
+      );
+    }
+
     // Generate signed URL for upload
     const { data, error } = await supabase.storage
       .from(bucket)

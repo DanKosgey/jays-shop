@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -669,6 +669,18 @@ function AddNewProductForm() {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  // Reset form function
+  const resetForm = () => {
+    setName('');
+    setCategory('');
+    setPrice('');
+    setStock('');
+    setDescription('');
+    setImageFile(null);
+    setImagePreview(null);
+    setFieldErrors({});
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -739,24 +751,20 @@ function AddNewProductForm() {
       const fileName = `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.${fileExt}`;
       const filePath = `products/${fileName}`;
 
-      const response = await fetch('/api/storage/sign', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          bucket: 'products',
-          filePath,
-        }),
-      });
+      // Get Supabase client to ensure proper auth headers
+      const supabase = getSupabaseBrowserClient();
+      
+      // Create signed upload URL using Supabase client
+      const { data, error } = await supabase.storage
+        .from('products')
+        .createSignedUploadUrl(filePath);
 
-      if (!response.ok) {
-        throw new Error('Failed to get upload URL');
+      if (error) {
+        throw new Error(`Failed to get upload URL: ${error.message}`);
       }
 
-      const { url, fullPath } = await response.json();
-
-      const uploadResponse = await fetch(url, {
+      // Upload the file using the signed URL
+      const uploadResponse = await fetch(data.signedUrl, {
         method: 'PUT',
         body: file,
         headers: {
@@ -823,8 +831,11 @@ function AddNewProductForm() {
 
       const newProduct = await response.json();
       
-      // Close the dialog and reset form
-      window.location.reload(); // Simple way to refresh the data
+      // Reset form
+      resetForm();
+      
+      // Close the dialog and refresh the data
+      window.location.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
@@ -988,6 +999,19 @@ function AddSecondHandItemForm() {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  // Reset form function
+  const resetForm = () => {
+    setName('');
+    setCategory('');
+    setCondition('Like New');
+    setPrice('');
+    setDescription('');
+    setSellerName('');
+    setImageFile(null);
+    setImagePreview(null);
+    setFieldErrors({});
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -1060,24 +1084,20 @@ function AddSecondHandItemForm() {
       const fileName = `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.${fileExt}`;
       const filePath = `products/${fileName}`;
 
-      const response = await fetch('/api/storage/sign', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          bucket: 'products',
-          filePath,
-        }),
-      });
+      // Get Supabase client to ensure proper auth headers
+      const supabase = getSupabaseBrowserClient();
+      
+      // Create signed upload URL using Supabase client
+      const { data, error } = await supabase.storage
+        .from('products')
+        .createSignedUploadUrl(filePath);
 
-      if (!response.ok) {
-        throw new Error('Failed to get upload URL');
+      if (error) {
+        throw new Error(`Failed to get upload URL: ${error.message}`);
       }
 
-      const { url, fullPath } = await response.json();
-
-      const uploadResponse = await fetch(url, {
+      // Upload the file using the signed URL
+      const uploadResponse = await fetch(data.signedUrl, {
         method: 'PUT',
         body: file,
         headers: {
@@ -1164,6 +1184,9 @@ function AddSecondHandItemForm() {
         throw new Error(errorData.error || 'Failed to create second-hand product entry');
       }
 
+      // Reset form
+      resetForm();
+      
       // Reload the page to show the new product
       window.location.reload();
     } catch (err) {
