@@ -26,6 +26,54 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '12', 10);
+    const slug = searchParams.get('slug');
+    
+    // If slug is provided, fetch specific product
+    if (slug) {
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('id, name, slug, category, description, price, stock_quantity, image_url, created_at, is_featured')
+          .eq('slug', slug)
+          .single();
+
+        if (error) {
+          console.error('Database error fetching product by slug:', error);
+          return NextResponse.json({ error: 'Failed to fetch product' }, { status: 500 });
+        }
+
+        if (!data) {
+          return NextResponse.json({ products: [] }, { status: 200 });
+        }
+
+        const product = {
+          id: data.id,
+          name: data.name ?? '',
+          slug: data.slug ?? undefined,
+          category: data.category ?? undefined,
+          description: data.description ?? '',
+          price: data.price ? Number(data.price) : 0,
+          stock_quantity: typeof data.stock_quantity === 'number' ? data.stock_quantity : 0,
+          image_url: data.image_url ?? '',
+          created_at: data.created_at ?? undefined,
+          is_featured: typeof data.is_featured === 'boolean' ? data.is_featured : false,
+        };
+
+        // Validate the response structure
+        const parsed = ProductsResponseSchema.safeParse({ products: [product] });
+        if (!parsed.success) {
+          console.error('Data validation error for product:', parsed.error);
+          return NextResponse.json({ error: 'Invalid product data', details: parsed.error.errors }, { status: 500 });
+        }
+
+        return NextResponse.json({
+          products: [product]
+        }, { status: 200 });
+      } catch (queryError: any) {
+        console.error('Database query error:', queryError);
+        return NextResponse.json({ error: 'Failed to fetch product', details: queryError.message || 'Unknown error' }, { status: 500 });
+      }
+    }
     
     // Ensure page and limit are valid
     const validPage = Math.max(1, page);

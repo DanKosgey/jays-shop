@@ -343,14 +343,6 @@ export default function ShopPage() {
                       <p className="text-2xl font-semibold text-accent">
                         Ksh{product.price.toFixed(2)}
                       </p>
-                      <Button asChild size="icon" className="relative group/button">
-                        <Link href={`/product/${product.slug}`}>
-                          <span className="group-hover/button:opacity-0 transition-opacity">
-                            View
-                          </span>
-                          <ArrowRight className="absolute h-4 w-4 opacity-0 group-hover/button:opacity-100 transition-opacity" />
-                        </Link>
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>

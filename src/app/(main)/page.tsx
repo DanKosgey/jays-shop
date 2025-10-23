@@ -27,6 +27,19 @@ function HomePageContent() {
   const [binaryRain, setBinaryRain] = useState<Array<{id: number, style: React.CSSProperties, content: string}>>([]);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
+  // State for scroll position
+  const [scrollPosition, setScrollPosition] = useState(0);
+  
+  // Track scroll position
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollPosition(window.scrollY);
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Initialize ticket number from URL
   useEffect(() => {
     const ticket = searchParams.get('ticketNumber');
@@ -207,6 +220,14 @@ function HomePageContent() {
 
   const isVisible = useCallback((id: string) => visibleElements.has(id), [visibleElements]);
 
+  // Scroll to section function
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 text-white overflow-hidden relative">
       {/* Animated background grid */}
@@ -360,11 +381,17 @@ function HomePageContent() {
               </div>
             </form>
           </div>
+          
+          {/* Scroll Down Indicator */}
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center animate-bounce cursor-pointer" onClick={() => scrollToSection('featured-products')}>
+            <span className="text-sm mb-2">Scroll to explore</span>
+            <ChevronRight className="h-6 w-6 rotate-90" />
+          </div>
         </div>
       </section>
 
       {/* Featured Products Section - Moved to top */}
-      <section className="relative py-12 px-4 sm:px-6 bg-gradient-to-b from-slate-950/50 to-slate-900/50">
+      <section id="featured-products" className="relative py-12 px-4 sm:px-6 bg-gradient-to-b from-slate-950/50 to-slate-900/50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-500/5 backdrop-blur-xl rounded-full border border-blue-400/20 animate-slide-down mb-4">
@@ -390,8 +417,8 @@ function HomePageContent() {
                   key={product.id}
                   id={`product-${index}`}
                   data-animate
-                  className={`group relative rounded-2xl transition-all duration-500 hover:scale-105 animate-fade-in-up ${
-                    isVisible(`product-${index}`) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+                  className={`group relative rounded-2xl transition-all duration-500 hover:scale-105 ${
+                    isVisible(`product-${index}`) ? 'opacity-100 translate-y-0' : 'opacity-100 translate-y-0'
                   }`}
                   style={{ transitionDelay: `${index * 0.1}s` } as React.CSSProperties}
                 >
@@ -414,9 +441,6 @@ function HomePageContent() {
                       <p className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-3">
                         Ksh {product.price.toFixed(2)}
                       </p>
-                      <Button asChild className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg text-sm">
-                        <Link href={`/product/${product.slug}`}>View Enhancement</Link>
-                      </Button>
                     </CardContent>
                   </Card>
                 </div>
@@ -440,7 +464,7 @@ function HomePageContent() {
       </section>
 
       {/* Stats Section */}
-      <section className="relative py-20 px-4 sm:px-6">
+      <section id="stats" className="relative py-20 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-black mb-4 bg-gradient-to-r from-cyan-400 via-blue-300 to-cyan-500 bg-clip-text text-transparent">
@@ -479,7 +503,7 @@ function HomePageContent() {
       </section>
 
       {/* How It Works Section */}
-      <section className="relative py-20 px-4 sm:px-6">
+      <section id="how-it-works" className="relative py-20 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-black mb-4 bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500 bg-clip-text text-transparent">
@@ -522,7 +546,7 @@ function HomePageContent() {
       </section>
 
       {/* Why Choose Us Section */}
-      <section className="relative py-20 px-4 sm:px-6">
+      <section id="why-choose-us" className="relative py-20 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-black mb-4 bg-gradient-to-r from-emerald-400 via-cyan-300 to-emerald-500 bg-clip-text text-transparent">
@@ -559,7 +583,7 @@ function HomePageContent() {
       </section>
 
       {/* CTA Section */}
-      <section className="relative py-20 px-4 sm:px-6">
+      <section id="cta" className="relative py-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
           <div className="relative inline-block mb-8">
             <h2 className="text-4xl sm:text-5xl font-black mb-6 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
@@ -586,6 +610,51 @@ function HomePageContent() {
           </div>
         </div>
       </section>
+
+      {/* Floating Navigation Menu */}
+      {scrollPosition > 100 && (
+        <div className="fixed bottom-8 right-8 z-50">
+          <div className="bg-black/30 backdrop-blur-lg rounded-2xl p-2 border border-white/10 shadow-2xl">
+            <div className="flex flex-col gap-2">
+              <button 
+                onClick={() => scrollToSection('featured-products')}
+                className="p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 backdrop-blur-sm border border-white/5"
+                aria-label="Scroll to products"
+              >
+                <Smartphone className="h-5 w-5" />
+              </button>
+              <button 
+                onClick={() => scrollToSection('stats')}
+                className="p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 backdrop-blur-sm border border-white/5"
+                aria-label="Scroll to stats"
+              >
+                <Star className="h-5 w-5" />
+              </button>
+              <button 
+                onClick={() => scrollToSection('how-it-works')}
+                className="p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 backdrop-blur-sm border border-white/5"
+                aria-label="Scroll to how it works"
+              >
+                <Wrench className="h-5 w-5" />
+              </button>
+              <button 
+                onClick={() => scrollToSection('why-choose-us')}
+                className="p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 backdrop-blur-sm border border-white/5"
+                aria-label="Scroll to why choose us"
+              >
+                <Award className="h-5 w-5" />
+              </button>
+              <button 
+                onClick={() => scrollToSection('cta')}
+                className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 transition-all duration-300 backdrop-blur-sm border border-white/5"
+                aria-label="Scroll to contact"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Animation styles */}
       <style jsx global>{`

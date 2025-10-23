@@ -12,6 +12,61 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '12');
     const condition = searchParams.get('condition');
     const category = searchParams.get('category');
+    const slug = searchParams.get('slug');
+    
+    // If slug is provided, fetch specific second-hand product
+    if (slug) {
+      try {
+        const { data, error } = await supabase
+          .from('second_hand_products')
+          .select(`
+            id,
+            condition,
+            seller_name,
+            created_at,
+            updated_at,
+            products (
+              id,
+              name,
+              slug,
+              category,
+              description,
+              price,
+              stock_quantity,
+              image_url,
+              is_featured
+            )
+          `)
+          .eq('products.slug', slug)
+          .single();
+
+        if (error) {
+          console.error('Database error fetching second hand product by slug:', error);
+          return NextResponse.json({ error: 'Failed to fetch second hand product' }, { status: 500 });
+        }
+
+        if (!data || !data.products) {
+          return NextResponse.json({ products: [] }, { status: 200 });
+        }
+
+        // Transform the data to match the expected format
+        const product = {
+          id: data.id,
+          condition: data.condition,
+          seller_name: data.seller_name,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+          ...data.products
+        };
+
+        return NextResponse.json({
+          products: [product]
+        }, { status: 200 });
+      } catch (queryError: any) {
+        console.error('Database query error:', queryError);
+        return NextResponse.json({ error: 'Failed to fetch second hand product', details: queryError.message || 'Unknown error' }, { status: 500 });
+      }
+    }
     
     // Calculate pagination
     const from = (page - 1) * limit;
