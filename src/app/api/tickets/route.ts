@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get('status');
     const search = searchParams.get('search');
     const ticketNumber = searchParams.get('ticketNumber');
+    const customerName = searchParams.get('customerName');
 
     // Calculate pagination
     const from = (page - 1) * limit;
@@ -29,14 +30,16 @@ export async function GET(req: NextRequest) {
     if (ticketNumber) {
       // If ticketNumber is provided, filter by exact match
       query = query.eq('ticket_number', ticketNumber);
+    } else if (customerName) {
+      // If customerName is provided, filter by partial match (case-insensitive)
+      query = query.ilike('customer_name', `%${customerName}%`);
+    } else if (search) {
+      // General search across multiple fields
+      query = query.or(`customer_name.ilike.%${search}%,device_model.ilike.%${search}%,ticket_number.ilike.%${search}%`);
     } else {
-      // Only apply other filters when ticketNumber is not provided
+      // Only apply status filter when no specific search is provided
       if (status && status !== 'all') {
         query = query.eq('status', status);
-      }
-
-      if (search) {
-        query = query.or(`customer_name.ilike.%${search}%,device_model.ilike.%${search}%`);
       }
     }
 

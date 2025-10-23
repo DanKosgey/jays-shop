@@ -75,8 +75,12 @@ const STATUS_ORDER: StatusKey[] = [
 function TrackPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [ticketNumber, setTicketNumber] = useState(searchParams.get("ticketNumber") || "");
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("ticketNumber") || searchParams.get("customerName") || "");
+  const [searchType, setSearchType] = useState<"ticketNumber" | "customerName">(
+    searchParams.get("customerName") ? "customerName" : "ticketNumber"
+  );
   const [ticket, setTicket] = useState<RepairTicket | null>(null);
+  const [tickets, setTickets] = useState<RepairTicket[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -91,62 +95,105 @@ function TrackPageContent() {
     window.dispatchEvent(event);
   }, []);
 
-  const performSearch = useCallback(async (searchTicketNumber: string) => {
+  const performSearch = useCallback(async (query: string) => {
     setError(null);
     setTicket(null);
+    setTickets([]);
     setHasSearched(true);
     
-    const trimmedTicket = searchTicketNumber.trim();
-    if (!trimmedTicket) {
-      setError("Please enter a ticket number.");
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) {
+      setError("Please enter a ticket number or customer name.");
+      return;
+    }
+
+    // Basic validation for search query length
+    if (trimmedQuery.length < 2) {
+      setError("Search query must be at least 2 characters long.");
       return;
     }
 
     setLoading(true);
     try {
-      const json = await fetchTickets(trimmedTicket);
+      let json: { tickets: any[] };
+      if (searchType === "ticketNumber") {
+        json = await fetchTickets(trimmedQuery) as { tickets: any[] };
+      } else {
+        // For customer name search, we need to pass it as the search parameter
+        json = await fetchTickets(undefined, 1, 10, trimmedQuery) as { tickets: any[] };
+      }
+      
       const list: any[] = json.tickets ?? [];
       
       if (list.length > 0) {
         const tickets = transformTicketsData(list);
-        const normalized = tickets[0];
-        setTicket(normalized);
-        dispatchTicketViewedEvent(normalized);
+        
+        if (list.length === 1) {
+          // Single ticket found, show details
+          const normalized = tickets[0];
+          setTicket(normalized);
+          dispatchTicketViewedEvent(normalized);
+        } else {
+          // Multiple tickets found, show list
+          setTickets(tickets);
+        }
         
         // Update URL without triggering navigation
         const params = new URLSearchParams(searchParams.toString());
-        params.set('ticketNumber', trimmedTicket);
+        if (searchType === "ticketNumber") {
+          params.set('ticketNumber', trimmedQuery);
+          params.delete('customerName');
+        } else {
+          params.set('customerName', trimmedQuery);
+          params.delete('ticketNumber');
+        }
         router.replace(`?${params.toString()}`, { scroll: false });
       } else {
-        setError("No repair ticket found with that number. Please check and try again.");
+        setError(`No repair ticket found with that ${searchType === "ticketNumber" ? "ticket number" : "customer name"}. Please check and try again.`);
       }
     } catch (e: any) {
       setError(e?.message || "An error occurred while fetching the ticket.");
     } finally {
       setLoading(false);
     }
-  }, [searchParams, router, dispatchTicketViewedEvent]);
+  }, [searchParams, router, dispatchTicketViewedEvent, searchType]);
 
   useEffect(() => {
     const ticketFromUrl = searchParams.get("ticketNumber");
-    if (ticketFromUrl && !hasSearched) {
-      setTicketNumber(ticketFromUrl);
-      performSearch(ticketFromUrl);
+    const customerFromUrl = searchParams.get("customerName");
+    
+    if ((ticketFromUrl || customerFromUrl) && !hasSearched) {
+      if (customerFromUrl) {
+        setSearchQuery(customerFromUrl);
+        setSearchType("customerName");
+        performSearch(customerFromUrl);
+      } else if (ticketFromUrl) {
+        setSearchQuery(ticketFromUrl);
+        setSearchType("ticketNumber");
+        performSearch(ticketFromUrl);
+      }
     }
   }, [searchParams, hasSearched, performSearch]);
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
-    void performSearch(ticketNumber);
+    void performSearch(searchQuery);
   };
 
   const handleTryAgain = () => {
     setError(null);
     setTicket(null);
-    setTicketNumber("");
+    setTickets([]);
+    setSearchQuery("");
     setHasSearched(false);
     // Clear URL params
     router.replace(window.location.pathname, { scroll: false });
+  };
+
+  const selectTicket = (selectedTicket: RepairTicket) => {
+    setTicket(selectedTicket);
+    setTickets([]);
+    dispatchTicketViewedEvent(selectedTicket);
   };
 
   const currentStatusIndex = ticket 
@@ -200,44 +247,61 @@ function TrackPageContent() {
           Repair Status Matrix
         </h1>
         <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">
-          Input your service tag to access real-time repair diagnostics.
+          Search for your repair using ticket number or customer name
         </p>
       </div>
 
       <Card className="mb-8 shadow-lg border-border/50 bg-card/80 backdrop-blur-sm">
         <CardContent className="p-6">
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row w-full gap-4">
-            <Input
-              type="text"
-              placeholder="Enter service tag (e.g., RPR-2025-0001)"
-              value={ticketNumber}
-              onChange={(e) => {
-                setTicketNumber(e.target.value);
-                // Clear error when user starts typing again
-                if (error) setError(null);
-              }}
-              className="flex-grow text-base h-12"
-              aria-label="Ticket Number"
-              disabled={loading}
-            />
-            <Button 
-              type="submit" 
-              size="lg" 
-              className="w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90" 
-              disabled={loading || !ticketNumber.trim()}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-                  Querying...
-                </>
-              ) : (
-                <>
-                  <Search className="mr-2 h-5 w-5" /> 
-                  Track
-                </>
-              )}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full">
+              <div className="flex items-center border rounded-md bg-background">
+                <select
+                  value={searchType}
+                  onChange={(e) => setSearchType(e.target.value as "ticketNumber" | "customerName")}
+                  className="h-12 px-3 bg-transparent border-r border-border rounded-l-md focus:outline-none focus:ring-2 focus:ring-accent"
+                  disabled={loading}
+                >
+                  <option value="ticketNumber">Ticket Number</option>
+                  <option value="customerName">Customer Name</option>
+                </select>
+                <Input
+                  type="text"
+                  placeholder={
+                    searchType === "ticketNumber" 
+                      ? "Enter service tag (e.g., RPR-2025-0001)" 
+                      : "Enter your full name"
+                  }
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    // Clear error when user starts typing again
+                    if (error) setError(null);
+                  }}
+                  className="flex-grow text-base h-12 border-0 focus-visible:ring-0"
+                  aria-label={searchType === "ticketNumber" ? "Ticket Number" : "Customer Name"}
+                  disabled={loading}
+                />
+              </div>
+              <Button 
+                type="submit" 
+                size="lg" 
+                className="w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90" 
+                disabled={loading || !searchQuery.trim()}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <Search className="mr-2 h-5 w-5" /> 
+                    Track
+                  </>
+                )}
+              </Button>
+            </div>
           </form>
           
           {error && (
@@ -253,12 +317,53 @@ function TrackPageContent() {
                 className="w-full sm:w-auto"
               >
                 <RotateCcw className="mr-2 h-4 w-4" />
-                Try Another Ticket
+                Try Another Search
               </Button>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Display multiple tickets if found */}
+      {tickets.length > 0 && (
+        <Card className="mb-8 shadow-lg border-border/50 bg-card/80 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-xl font-headline">Multiple Repair Tickets Found</CardTitle>
+            <CardDescription>Select a ticket to view its details</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {tickets.map((t) => (
+              <Card 
+                key={t.id} 
+                className="cursor-pointer hover:bg-accent/10 transition-colors"
+                onClick={() => selectTicket(t)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-headline font-semibold">{t.ticketNumber}</h3>
+                      <p className="text-sm text-muted-foreground">{t.deviceBrand} {t.deviceModel}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className={cn(
+                        "text-sm font-medium capitalize",
+                        t.status === 'completed' && "text-green-600",
+                        t.status === 'cancelled' && "text-destructive",
+                        t.status === 'ready' && "text-blue-600"
+                      )}>
+                        {t.status.replace('_', ' ')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Created: {formatDate(t.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {ticket && (
         <Card className="shadow-xl border-border/50 bg-card/80 backdrop-blur-sm animate-in fade-in-50 duration-500">
@@ -279,7 +384,7 @@ function TrackPageContent() {
                 onClick={handleTryAgain}
               >
                 <Search className="mr-2 h-4 w-4" />
-                Track Another
+                New Search
               </Button>
             </div>
           </CardHeader>
@@ -298,6 +403,10 @@ function TrackPageContent() {
                   <p>
                     <strong className="text-foreground font-medium">Type:</strong>{" "}
                     {ticket.deviceType}
+                  </p>
+                  <p>
+                    <strong className="text-foreground font-medium">Customer:</strong>{" "}
+                    {ticket.customerName}
                   </p>
                   <p>
                     <strong className="text-foreground font-medium">Priority:</strong>{" "}

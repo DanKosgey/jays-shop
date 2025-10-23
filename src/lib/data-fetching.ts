@@ -53,9 +53,10 @@ export async function fetchWithCache<T>(url: string, options: RequestInit = {}):
 }
 
 // Function to fetch tickets with optimized caching and pagination
-export async function fetchTickets(ticketNumber?: string, page: number = 1, limit: number = 10) {
+export async function fetchTickets(ticketNumber?: string, page: number = 1, limit: number = 10, search?: string) {
   const params = new URLSearchParams();
   if (ticketNumber) params.append('ticketNumber', ticketNumber);
+  if (search) params.append('search', search);
   params.append('page', page.toString());
   params.append('limit', limit.toString());
   
