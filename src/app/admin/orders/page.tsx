@@ -97,6 +97,8 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const sortedOrders = useMemo(() => {
     return [...allOrders].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -128,6 +130,64 @@ export default function OrdersPage() {
       setIsEditDialogOpen(true);
   };
   
+  const handleDeleteClick = (orderId: string) => {
+      setOrderToDelete(orderId);
+      setIsDeleteDialogOpen(true);
+  };
+  
+  const handleUpdateOrder = async (updatedOrder: any) => {
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedOrder),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update order');
+      }
+
+      // Refresh the data
+      window.location.reload();
+    } catch (err) {
+      console.error('Error updating order:', err);
+      // In a real app, we'd show an error message to the user
+    } finally {
+      setIsEditDialogOpen(false);
+      setSelectedOrder(null);
+    }
+  };
+  
+  const handleConfirmDelete = async () => {
+    if (!orderToDelete) return;
+    
+    try {
+      const response = await fetch(`/api/orders?id=${orderToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete order');
+      }
+
+      // Refresh the data
+      window.location.reload();
+    } catch (err) {
+      console.error('Error deleting order:', err);
+      // In a real app, we'd show an error message to the user
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setOrderToDelete(null);
+    }
+  };
+
   const totalOrders = sortedOrders.length;
   const totalPending = pendingOrders.length;
   const totalShipped = shippedOrders.length;
@@ -195,9 +255,9 @@ export default function OrdersPage() {
                       Print Invoice
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-destructive">
+                    <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(order.id)}>
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Cancel Order
+                      Delete Order
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -373,113 +433,272 @@ export default function OrdersPage() {
             <EditOrderForm order={selectedOrder} />
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-              <Button type="submit" onClick={() => setIsEditDialogOpen(false)}>Save Changes</Button>
+              <Button form="edit-order-form">Save Changes</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Order</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this order? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete}>
+              Confirm Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 function EditOrderForm({ order }: { order: Order }) {
+  const [customerName, setCustomerName] = useState(order.customer_name);
+  const [status, setStatus] = useState(order.status);
+  const [totalAmount, setTotalAmount] = useState(order.total_amount?.toString() || '');
+  const [items, setItems] = useState(JSON.stringify(order.items || [], null, 2));
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Prepare data for update
+      const orderData = {
+        id: order.id,
+        customer_name: customerName,
+        status: status,
+        total_amount: totalAmount ? parseFloat(totalAmount) : 0,
+        // For simplicity, we're not updating items in this implementation
+      };
+
+      const response = await fetch('/api/orders', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update order');
+      }
+
+      const updatedOrder = await response.json();
+      
+      // Close the dialog and refresh the data
+      window.location.reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="grid gap-4 py-4">
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="customerName" className="text-right">Customer</Label>
-        <Input 
-          id="customerName" 
-          defaultValue={order.customer_name} 
-          className="col-span-3" 
-        />
+    <form id="edit-order-form" onSubmit={handleSubmit}>
+      <div className="grid gap-4 py-4">
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="customerName" className="text-right">Customer</Label>
+          <Input 
+            id="customerName" 
+            value={customerName} 
+            onChange={(e) => setCustomerName(e.target.value)}
+            className="col-span-3" 
+            required
+          />
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="status" className="text-right">Status</Label>
+          <Select value={status} onValueChange={(value) => setStatus(value)}>
+            <SelectTrigger className="col-span-3">
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map(status => (
+                <SelectItem 
+                  key={status} 
+                  value={status} 
+                  className="capitalize"
+                >
+                  {status.replace('_', ' ')}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="totalAmount" className="text-right">Total Amount</Label>
+          <Input 
+            id="totalAmount" 
+            type="number" 
+            value={totalAmount} 
+            onChange={(e) => setTotalAmount(e.target.value)}
+            className="col-span-3" 
+            required
+          />
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="orderItems" className="text-right">Items</Label>
+          <Textarea 
+            id="orderItems" 
+            value={items} 
+            onChange={(e) => setItems(e.target.value)}
+            className="col-span-3 min-h-[150px] font-mono text-xs" 
+            readOnly
+          />
+        </div>
+        {error && <div className="text-sm text-destructive col-span-4 text-center">{error}</div>}
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="status" className="text-right">Status</Label>
-        <Select defaultValue={order.status}>
-          <SelectTrigger className="col-span-3">
-            <SelectValue placeholder="Select status" />
-          </SelectTrigger>
-          <SelectContent>
-            {statusOptions.map(status => (
-              <SelectItem 
-                key={status} 
-                value={status} 
-                className="capitalize"
-              >
-                {status.replace('_', ' ')}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="totalAmount" className="text-right">Total Amount</Label>
-        <Input 
-          id="totalAmount" 
-          type="number" 
-          defaultValue={order.total_amount || ''} 
-          className="col-span-3" 
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="orderItems" className="text-right">Items</Label>
-        <Textarea 
-          id="orderItems" 
-          defaultValue={JSON.stringify(order.items || [], null, 2)} 
-          className="col-span-3 min-h-[150px] font-mono text-xs" 
-        />
-      </div>
-    </div>
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={() => {
+          // Reset form to original values
+          setCustomerName(order.customer_name);
+          setStatus(order.status);
+          setTotalAmount(order.total_amount?.toString() || '');
+          setItems(JSON.stringify(order.items || [], null, 2));
+        }}>
+          Reset
+        </Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Saving...' : 'Save Changes'}
+        </Button>
+      </DialogFooter>
+    </form>
   );
 }
 
 function CreateOrderForm() {
+  const [customerName, setCustomerName] = useState('');
+  const [items, setItems] = useState('');
+  const [totalAmount, setTotalAmount] = useState('');
+  const [status, setStatus] = useState('pending');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Prepare data according to schema
+      const orderData = {
+        customer_name: customerName,
+        status: status,
+        total_amount: totalAmount ? parseFloat(totalAmount) : 0,
+        order_number: `ORD-${Date.now()}`, // Generate a simple order number
+      };
+
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create order');
+      }
+
+      const newOrder = await response.json();
+      
+      // Close the dialog and reset form
+      window.location.reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="grid gap-4 py-4">
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="new-customerName" className="text-right">Customer</Label>
-        <Input 
-          id="new-customerName" 
-          placeholder="e.g., John Doe" 
-          className="col-span-3" 
-        />
+    <form onSubmit={handleSubmit}>
+      <div className="grid gap-4 py-4">
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="new-customerName" className="text-right">Customer</Label>
+          <Input 
+            id="new-customerName" 
+            placeholder="e.g., John Doe" 
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            className="col-span-3" 
+            required
+          />
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="new-items" className="text-right">Items</Label>
+          <Textarea 
+            id="new-items" 
+            placeholder="Enter items (JSON format)..." 
+            value={items}
+            onChange={(e) => setItems(e.target.value)}
+            className="col-span-3 min-h-[100px]" 
+          />
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="new-totalAmount" className="text-right">Total Amount (Ksh)</Label>
+          <Input 
+            id="new-totalAmount" 
+            type="number" 
+            placeholder="e.g., 15000" 
+            value={totalAmount}
+            onChange={(e) => setTotalAmount(e.target.value)}
+            className="col-span-3" 
+            required
+          />
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="new-status" className="text-right">Status</Label>
+          <Select value={status} onValueChange={(value) => setStatus(value)}>
+            <SelectTrigger className="col-span-3">
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map(status => (
+                <SelectItem 
+                  key={status} 
+                  value={status} 
+                  className="capitalize"
+                >
+                  {status}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {error && <div className="text-sm text-destructive col-span-4 text-center">{error}</div>}
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="new-items" className="text-right">Items</Label>
-        <Textarea 
-          id="new-items" 
-          placeholder="Enter items (JSON format)..." 
-          className="col-span-3 min-h-[100px]" 
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="new-totalAmount" className="text-right">Total Amount (Ksh)</Label>
-        <Input 
-          id="new-totalAmount" 
-          type="number" 
-          placeholder="e.g., 15000" 
-          className="col-span-3" 
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="new-status" className="text-right">Status</Label>
-        <Select defaultValue="pending">
-          <SelectTrigger className="col-span-3">
-            <SelectValue placeholder="Select status" />
-          </SelectTrigger>
-          <SelectContent>
-            {statusOptions.map(status => (
-              <SelectItem 
-                key={status} 
-                value={status} 
-                className="capitalize"
-              >
-                {status}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={() => {
+          // Reset form
+          setCustomerName('');
+          setItems('');
+          setTotalAmount('');
+          setStatus('pending');
+        }}>
+          Reset
+        </Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Creating...' : 'Create Order'}
+        </Button>
+      </DialogFooter>
+    </form>
   );
 }

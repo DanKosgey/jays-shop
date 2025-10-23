@@ -64,15 +64,141 @@ function EditProductForm({ product, onUpdate }: { product: Product; onUpdate: (u
   const [price, setPrice] = useState(product.price.toString());
   const [stock, setStock] = useState(product.stockQuantity?.toString() || '0');
   const [description, setDescription] = useState(product.description);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(product.imageUrl);
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setFieldErrors(prev => ({ ...prev, image: 'Please select an image file' }));
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setFieldErrors(prev => ({ ...prev, image: 'Image size must be less than 5MB' }));
+        return;
+      }
+      
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.image;
+        return newErrors;
+      });
+      
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!name.trim()) {
+      errors.name = 'Product name is required';
+    } else if (name.length < 3) {
+      errors.name = 'Product name must be at least 3 characters';
+    }
+    
+    if (!category.trim()) {
+      errors.category = 'Category is required';
+    }
+    
+    if (!price) {
+      errors.price = 'Price is required';
+    } else if (isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
+      errors.price = 'Price must be a positive number';
+    }
+    
+    if (stock && (isNaN(parseInt(stock)) || parseInt(stock) < 0)) {
+      errors.stock = 'Stock must be a non-negative number';
+    }
+    
+    if (!description.trim()) {
+      errors.description = 'Description is required';
+    } else if (description.length < 10) {
+      errors.description = 'Description must be at least 10 characters';
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const uploadImage = async (file: File, productName: string): Promise<string | null> => {
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.${fileExt}`;
+      const filePath = `products/${fileName}`;
+
+      const response = await fetch('/api/storage/sign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bucket: 'products',
+          filePath,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get upload URL');
+      }
+
+      const { url, fullPath } = await response.json();
+
+      const uploadResponse = await fetch(url, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      // Return the public URL
+      return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/products/${fileName}`;
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+    
     setLoading(true);
     setError(null);
 
     try {
+      let imageUrl = product.imageUrl;
+      
+      // Upload image if provided
+      if (imageFile && name) {
+        imageUrl = (await uploadImage(imageFile, name)) || imageUrl;
+      }
+
       // Prepare data according to schema
       const productData = {
         id: product.id,
@@ -81,6 +207,7 @@ function EditProductForm({ product, onUpdate }: { product: Product; onUpdate: (u
         price: parseFloat(price),
         stock_quantity: stock ? parseInt(stock) : 0,
         description,
+        image_url: imageUrl,
       };
 
       onUpdate(productData);
@@ -98,17 +225,39 @@ function EditProductForm({ product, onUpdate }: { product: Product; onUpdate: (u
           <Input 
             id="edit-product-name" 
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (fieldErrors.name) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.name;
+                  return newErrors;
+                });
+              }
+            }}
+            className={fieldErrors.name ? 'border-red-500' : ''}
             required
           />
+          {fieldErrors.name && <p className="text-sm text-red-500">{fieldErrors.name}</p>}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="edit-product-category">Category</Label>
           <Input 
             id="edit-product-category" 
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            onChange={(e) => {
+              setCategory(e.target.value);
+              if (fieldErrors.category) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.category;
+                  return newErrors;
+                });
+              }
+            }}
+            className={fieldErrors.category ? 'border-red-500' : ''}
           />
+          {fieldErrors.category && <p className="text-sm text-red-500">{fieldErrors.category}</p>}
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="grid gap-2">
@@ -117,9 +266,20 @@ function EditProductForm({ product, onUpdate }: { product: Product; onUpdate: (u
               id="edit-product-price" 
               type="number" 
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={(e) => {
+                setPrice(e.target.value);
+                if (fieldErrors.price) {
+                  setFieldErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.price;
+                    return newErrors;
+                  });
+                }
+              }}
+              className={fieldErrors.price ? 'border-red-500' : ''}
               required
             />
+            {fieldErrors.price && <p className="text-sm text-red-500">{fieldErrors.price}</p>}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="edit-product-stock">Stock Quantity</Label>
@@ -127,19 +287,63 @@ function EditProductForm({ product, onUpdate }: { product: Product; onUpdate: (u
               id="edit-product-stock" 
               type="number" 
               value={stock}
-              onChange={(e) => setStock(e.target.value)}
+              onChange={(e) => {
+                setStock(e.target.value);
+                if (fieldErrors.stock) {
+                  setFieldErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.stock;
+                    return newErrors;
+                  });
+                }
+              }}
+              className={fieldErrors.stock ? 'border-red-500' : ''}
             />
+            {fieldErrors.stock && <p className="text-sm text-red-500">{fieldErrors.stock}</p>}
           </div>
         </div>
         <div className="grid gap-2">
           <Label htmlFor="edit-product-description">Description</Label>
           <Textarea 
             id="edit-product-description" 
-            className="min-h-[100px]" 
+            className={`min-h-[100px] ${fieldErrors.description ? 'border-red-500' : ''}`}
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              if (fieldErrors.description) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.description;
+                  return newErrors;
+                });
+              }
+            }}
             required
           />
+          {fieldErrors.description && <p className="text-sm text-red-500">{fieldErrors.description}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="edit-product-image">Product Image</Label>
+          <Input 
+            id="edit-product-image" 
+            type="file" 
+            accept="image/*"
+            onChange={handleImageChange}
+            className={fieldErrors.image ? 'border-red-500' : ''}
+          />
+          {imagePreview && (
+            <div className="mt-2">
+              <Image 
+                src={imagePreview} 
+                alt="Preview" 
+                width={100} 
+                height={100} 
+                className="object-cover rounded-md"
+              />
+            </div>
+          )}
+          {fieldErrors.image && <p className="text-sm text-red-500">{fieldErrors.image}</p>}
+          {uploading && <p className="text-sm text-muted-foreground">Uploading image...</p>}
         </div>
         {error && <div className="text-sm text-destructive text-center">{error}</div>}
         <DialogFooter>
@@ -150,13 +354,370 @@ function EditProductForm({ product, onUpdate }: { product: Product; onUpdate: (u
             setPrice(product.price.toString());
             setStock(product.stockQuantity?.toString() || '0');
             setDescription(product.description);
+            setImagePreview(product.imageUrl);
+            setImageFile(null);
+            setFieldErrors({});
           }}>
             Reset
           </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Saving...' : 'Save Changes'}
+          <Button type="submit" disabled={loading || uploading}>
+            {loading || uploading ? 'Saving...' : 'Save Changes'}
           </Button>
         </DialogFooter>
+      </div>
+    </form>
+  );
+}
+
+
+
+function AddSecondHandItemForm() {
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('');
+  const [condition, setCondition] = useState('Like New');
+  const [price, setPrice] = useState('');
+  const [description, setDescription] = useState('');
+  const [sellerName, setSellerName] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setFieldErrors(prev => ({ ...prev, image: 'Please select an image file' }));
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setFieldErrors(prev => ({ ...prev, image: 'Image size must be less than 5MB' }));
+        return;
+      }
+      
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.image;
+        return newErrors;
+      });
+      
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!name.trim()) {
+      errors.name = 'Item name is required';
+    } else if (name.length < 3) {
+      errors.name = 'Item name must be at least 3 characters';
+    }
+    
+    if (!category.trim()) {
+      errors.category = 'Category is required';
+    }
+    
+    if (!price) {
+      errors.price = 'Price is required';
+    } else if (isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
+      errors.price = 'Price must be a positive number';
+    }
+    
+    if (!description.trim()) {
+      errors.description = 'Description is required';
+    } else if (description.length < 10) {
+      errors.description = 'Description must be at least 10 characters';
+    }
+    
+    if (!sellerName.trim()) {
+      errors.sellerName = 'Seller name is required';
+    } else if (sellerName.length < 2) {
+      errors.sellerName = 'Seller name must be at least 2 characters';
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const uploadImage = async (file: File, productName: string): Promise<string | null> => {
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.${fileExt}`;
+      const filePath = `products/${fileName}`;
+
+      const response = await fetch('/api/storage/sign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bucket: 'products',
+          filePath,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get upload URL');
+      }
+
+      const { url, fullPath } = await response.json();
+
+      const uploadResponse = await fetch(url, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      // Return the public URL
+      return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/products/${fileName}`;
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+
+    try {
+      let imageUrl = '/placeholder.svg';
+      
+      // Upload image if provided
+      if (imageFile && name) {
+        imageUrl = (await uploadImage(imageFile, name)) || imageUrl;
+      }
+
+      // First, create a regular product
+      const productData = {
+        name,
+        category: category || null,
+        price: parseFloat(price),
+        stock_quantity: 1, // Second-hand items typically have quantity of 1
+        description,
+        image_url: imageUrl,
+        is_featured: false, // Default value
+      };
+
+      const productResponse = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productData),
+      });
+
+      if (!productResponse.ok) {
+        const errorData = await productResponse.json();
+        throw new Error(errorData.error || 'Failed to create product');
+      }
+
+      const newProduct = await productResponse.json();
+      
+      // Then, create a second-hand product entry that references this product
+      const secondHandData = {
+        product_id: newProduct.id,
+        condition,
+        seller_name: sellerName,
+      };
+
+      const secondHandResponse = await fetch('/api/second-hand-products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(secondHandData),
+      });
+
+      if (!secondHandResponse.ok) {
+        const errorData = await secondHandResponse.json();
+        throw new Error(errorData.error || 'Failed to create second-hand product entry');
+      }
+
+      // Reload the page to show the new product
+      window.location.reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="grid gap-4 py-4">
+        <div className="grid gap-2">
+          <Label htmlFor="item-name">Item Name</Label>
+          <Input 
+            id="item-name" 
+            placeholder="e.g., Used iPhone 12 Pro" 
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (fieldErrors.name) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.name;
+                  return newErrors;
+                });
+              }
+            }}
+            className={fieldErrors.name ? 'border-red-500' : ''}
+            required
+          />
+          {fieldErrors.name && <p className="text-sm text-red-500">{fieldErrors.name}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="item-category">Category</Label>
+          <Input 
+            id="item-category" 
+            placeholder="e.g., Smartphones" 
+            value={category}
+            onChange={(e) => {
+              setCategory(e.target.value);
+              if (fieldErrors.category) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.category;
+                  return newErrors;
+                });
+              }
+            }}
+            className={fieldErrors.category ? 'border-red-500' : ''}
+          />
+          {fieldErrors.category && <p className="text-sm text-red-500">{fieldErrors.category}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="item-condition">Condition</Label>
+          <select 
+            id="item-condition" 
+            className={`flex h-10 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${fieldErrors.condition ? 'border-red-500' : ''}`}
+            value={condition}
+            onChange={(e) => setCondition(e.target.value)}
+          >
+            <option value="Like New">Like New</option>
+            <option value="Good">Good</option>
+            <option value="Fair">Fair</option>
+          </select>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="asking-price">Asking Price (Ksh)</Label>
+          <Input 
+            id="asking-price" 
+            type="number" 
+            placeholder="e.g., 60000" 
+            value={price}
+            onChange={(e) => {
+              setPrice(e.target.value);
+              if (fieldErrors.price) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.price;
+                  return newErrors;
+                });
+              }
+            }}
+            className={fieldErrors.price ? 'border-red-500' : ''}
+            required
+          />
+          {fieldErrors.price && <p className="text-sm text-red-500">{fieldErrors.price}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="seller-name">Seller Name</Label>
+          <Input 
+            id="seller-name" 
+            placeholder="e.g., John Doe" 
+            value={sellerName}
+            onChange={(e) => {
+              setSellerName(e.target.value);
+              if (fieldErrors.sellerName) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.sellerName;
+                  return newErrors;
+                });
+              }
+            }}
+            className={fieldErrors.sellerName ? 'border-red-500' : ''}
+            required
+          />
+          {fieldErrors.sellerName && <p className="text-sm text-red-500">{fieldErrors.sellerName}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="item-description">Description</Label>
+          <Textarea 
+            id="item-description" 
+            placeholder="Describe the item, including any wear and tear." 
+            className={`min-h-[100px] ${fieldErrors.description ? 'border-red-500' : ''}`}
+            value={description}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              if (fieldErrors.description) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.description;
+                  return newErrors;
+                });
+              }
+            }}
+            required
+          />
+          {fieldErrors.description && <p className="text-sm text-red-500">{fieldErrors.description}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="item-image">Product Image</Label>
+          <Input 
+            id="item-image" 
+            type="file" 
+            accept="image/*"
+            onChange={handleImageChange}
+            className={fieldErrors.image ? 'border-red-500' : ''}
+          />
+          {imagePreview && (
+            <div className="mt-2">
+              <Image 
+                src={imagePreview} 
+                alt="Preview" 
+                width={100} 
+                height={100} 
+                className="object-cover rounded-md"
+              />
+            </div>
+          )}
+          {fieldErrors.image && <p className="text-sm text-red-500">{fieldErrors.image}</p>}
+          {uploading && <p className="text-sm text-muted-foreground">Uploading image...</p>}
+        </div>
+        {error && <div className="text-sm text-destructive text-center">{error}</div>}
+        <Button type="submit" disabled={loading || uploading}>
+          {loading ? 'Adding...' : 'Add Product to Marketplace'}
+        </Button>
       </div>
     </form>
   );
@@ -172,9 +733,13 @@ export default function ProductsPage() {
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isAddSecondHandOpen, setIsAddSecondHandOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [secondHandProductToDelete, setSecondHandProductToDelete] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isSecondHandDeleteDialogOpen, setIsSecondHandDeleteDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isSecondHandEditDialogOpen, setIsSecondHandEditDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedSecondHandProduct, setSelectedSecondHandProduct] = useState<any | null>(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -228,9 +793,19 @@ export default function ProductsPage() {
     setIsDeleteDialogOpen(true);
   };
   
+  const handleDeleteSecondHandProduct = (productId: string) => {
+    setSecondHandProductToDelete(productId);
+    setIsSecondHandDeleteDialogOpen(true);
+  };
+  
   const handleEditProduct = (product: Product) => {
     setSelectedProduct(product);
     setIsEditDialogOpen(true);
+  };
+
+  const handleEditSecondHandProduct = (product: any) => {
+    setSelectedSecondHandProduct(product);
+    setIsSecondHandEditDialogOpen(true);
   };
 
   const handleConfirmDelete = async () => {
@@ -260,6 +835,33 @@ export default function ProductsPage() {
     }
   };
   
+  const handleConfirmSecondHandDelete = async () => {
+    if (!secondHandProductToDelete) return;
+    
+    try {
+      const response = await fetch(`/api/second-hand-products?id=${secondHandProductToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete second-hand product');
+      }
+
+      // Refresh the data
+      window.location.reload();
+    } catch (err) {
+      console.error('Error deleting second-hand product:', err);
+      // In a real app, we'd show an error message to the user
+    } finally {
+      setIsSecondHandDeleteDialogOpen(false);
+      setSecondHandProductToDelete(null);
+    }
+  };
+  
   const handleUpdateProduct = async (updatedProduct: any) => {
     try {
       const response = await fetch('/api/products', {
@@ -283,6 +885,65 @@ export default function ProductsPage() {
     } finally {
       setIsEditDialogOpen(false);
       setSelectedProduct(null);
+    }
+  };
+
+  const handleUpdateSecondHandProduct = async (updatedProduct: any) => {
+    try {
+      // Update the second-hand product entry
+      const secondHandData = {
+        id: updatedProduct.id,
+        condition: updatedProduct.condition,
+        seller_name: updatedProduct.seller_name,
+      };
+
+      const response = await fetch('/api/second-hand-products', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(secondHandData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update second-hand product');
+      }
+
+      // If there are product details to update, update those as well
+      if (updatedProduct.product_id) {
+        const productData = {
+          id: updatedProduct.product_id,
+          name: updatedProduct.name,
+          category: updatedProduct.category,
+          price: updatedProduct.price,
+          stock_quantity: updatedProduct.stock_quantity,
+          description: updatedProduct.description,
+          image_url: updatedProduct.image_url,
+        };
+
+        const productResponse = await fetch('/api/products', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(productData),
+        });
+
+        if (!productResponse.ok) {
+          const errorData = await productResponse.json();
+          throw new Error(errorData.error || 'Failed to update product details');
+        }
+      }
+
+      // Refresh the data
+      window.location.reload();
+    } catch (err) {
+      console.error('Error updating second-hand product:', err);
+      // In a real app, we'd show an error message to the user
+    } finally {
+      setIsSecondHandEditDialogOpen(false);
+      setSelectedSecondHandProduct(null);
     }
   };
 
@@ -588,7 +1249,7 @@ export default function ProductsPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditSecondHandProduct(product)}>
                               <Edit className="mr-2 h-4 w-4" />
                               Edit
                             </DropdownMenuItem>
@@ -597,7 +1258,7 @@ export default function ProductsPage() {
                               View on Site
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive">
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteSecondHandProduct(product.id)}>
                               <Trash2 className="mr-2 h-4 w-4" />
                               Unlist
                             </DropdownMenuItem>
@@ -633,6 +1294,21 @@ export default function ProductsPage() {
         </Dialog>
       )}
       
+      {/* Edit Second-Hand Product Dialog */}
+      {selectedSecondHandProduct && (
+        <Dialog open={isSecondHandEditDialogOpen} onOpenChange={setIsSecondHandEditDialogOpen}>
+          <DialogContent className="sm:max-w-[480px]">
+            <DialogHeader>
+              <DialogTitle>Edit Second-Hand Product</DialogTitle>
+              <DialogDescription>
+                Make changes to the second-hand product details.
+              </DialogDescription>
+            </DialogHeader>
+            <EditSecondHandProductForm product={selectedSecondHandProduct} onUpdate={handleUpdateSecondHandProduct} />
+          </DialogContent>
+        </Dialog>
+      )}
+      
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
@@ -652,6 +1328,26 @@ export default function ProductsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Delete Second-Hand Product Confirmation Dialog */}
+      <Dialog open={isSecondHandDeleteDialogOpen} onOpenChange={setIsSecondHandDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Second-Hand Product</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this second-hand product? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSecondHandDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmSecondHandDelete}>
+              Confirm Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -662,15 +1358,141 @@ function AddNewProductForm() {
   const [price, setPrice] = useState('');
   const [stock, setStock] = useState('');
   const [description, setDescription] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setFieldErrors(prev => ({ ...prev, image: 'Please select an image file' }));
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setFieldErrors(prev => ({ ...prev, image: 'Image size must be less than 5MB' }));
+        return;
+      }
+      
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.image;
+        return newErrors;
+      });
+      
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!name.trim()) {
+      errors.name = 'Product name is required';
+    } else if (name.length < 3) {
+      errors.name = 'Product name must be at least 3 characters';
+    }
+    
+    if (!category.trim()) {
+      errors.category = 'Category is required';
+    }
+    
+    if (!price) {
+      errors.price = 'Price is required';
+    } else if (isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
+      errors.price = 'Price must be a positive number';
+    }
+    
+    if (stock && (isNaN(parseInt(stock)) || parseInt(stock) < 0)) {
+      errors.stock = 'Stock must be a non-negative number';
+    }
+    
+    if (!description.trim()) {
+      errors.description = 'Description is required';
+    } else if (description.length < 10) {
+      errors.description = 'Description must be at least 10 characters';
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const uploadImage = async (file: File, productName: string): Promise<string | null> => {
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.${fileExt}`;
+      const filePath = `products/${fileName}`;
+
+      const response = await fetch('/api/storage/sign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bucket: 'products',
+          filePath,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get upload URL');
+      }
+
+      const { url, fullPath } = await response.json();
+
+      const uploadResponse = await fetch(url, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      // Return the public URL
+      return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/products/${fileName}`;
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+    
     setLoading(true);
     setError(null);
 
     try {
+      let imageUrl = '/placeholder.svg';
+      
+      // Upload image if provided
+      if (imageFile && name) {
+        imageUrl = (await uploadImage(imageFile, name)) || imageUrl;
+      }
+
       // Prepare data according to schema
       const productData = {
         name,
@@ -678,7 +1500,7 @@ function AddNewProductForm() {
         price: parseFloat(price),
         stock_quantity: stock ? parseInt(stock) : 0,
         description,
-        image_url: '/placeholder.svg', // Default image
+        image_url: imageUrl,
         is_featured: false, // Default value
       };
 
@@ -715,9 +1537,19 @@ function AddNewProductForm() {
             id="product-name" 
             placeholder="e.g., Volta-Charge 100W PD Station" 
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
+            onChange={(e) => {
+              setName(e.target.value);
+              if (fieldErrors.name) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.name;
+                  return newErrors;
+                });
+              }
+            }}
+            className={fieldErrors.name ? 'border-red-500' : ''}
           />
+          {fieldErrors.name && <p className="text-sm text-red-500">{fieldErrors.name}</p>}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="product-category">Category</Label>
@@ -725,8 +1557,19 @@ function AddNewProductForm() {
             id="product-category" 
             placeholder="e.g., Chargers" 
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            onChange={(e) => {
+              setCategory(e.target.value);
+              if (fieldErrors.category) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.category;
+                  return newErrors;
+                });
+              }
+            }}
+            className={fieldErrors.category ? 'border-red-500' : ''}
           />
+          {fieldErrors.category && <p className="text-sm text-red-500">{fieldErrors.category}</p>}
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="grid gap-2">
@@ -736,9 +1579,19 @@ function AddNewProductForm() {
               type="number" 
               placeholder="e.g., 8000" 
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              required
+              onChange={(e) => {
+                setPrice(e.target.value);
+                if (fieldErrors.price) {
+                  setFieldErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.price;
+                    return newErrors;
+                  });
+                }
+              }}
+              className={fieldErrors.price ? 'border-red-500' : ''}
             />
+            {fieldErrors.price && <p className="text-sm text-red-500">{fieldErrors.price}</p>}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="product-stock">Stock Quantity</Label>
@@ -747,8 +1600,19 @@ function AddNewProductForm() {
               type="number" 
               placeholder="e.g., 50" 
               value={stock}
-              onChange={(e) => setStock(e.target.value)}
+              onChange={(e) => {
+                setStock(e.target.value);
+                if (fieldErrors.stock) {
+                  setFieldErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.stock;
+                    return newErrors;
+                  });
+                }
+              }}
+              className={fieldErrors.stock ? 'border-red-500' : ''}
             />
+            {fieldErrors.stock && <p className="text-sm text-red-500">{fieldErrors.stock}</p>}
           </div>
         </div>
         <div className="grid gap-2">
@@ -756,14 +1620,46 @@ function AddNewProductForm() {
           <Textarea 
             id="product-description" 
             placeholder="Describe the product..." 
-            className="min-h-[100px]" 
+            className={`min-h-[100px] ${fieldErrors.description ? 'border-red-500' : ''}`}
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            required
+            onChange={(e) => {
+              setDescription(e.target.value);
+              if (fieldErrors.description) {
+                setFieldErrors(prev => {
+                  const newErrors = { ...prev };
+                  delete newErrors.description;
+                  return newErrors;
+                });
+              }
+            }}
           />
+          {fieldErrors.description && <p className="text-sm text-red-500">{fieldErrors.description}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="product-image">Product Image</Label>
+          <Input 
+            id="product-image" 
+            type="file" 
+            accept="image/*"
+            onChange={handleImageChange}
+            className={fieldErrors.image ? 'border-red-500' : ''}
+          />
+          {imagePreview && (
+            <div className="mt-2">
+              <Image 
+                src={imagePreview} 
+                alt="Preview" 
+                width={100} 
+                height={100} 
+                className="object-cover rounded-md"
+              />
+            </div>
+          )}
+          {fieldErrors.image && <p className="text-sm text-red-500">{fieldErrors.image}</p>}
+          {uploading && <p className="text-sm text-muted-foreground">Uploading image...</p>}
         </div>
         {error && <div className="text-sm text-destructive text-center">{error}</div>}
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading || uploading}>
           {loading ? 'Creating...' : 'Add New Product'}
         </Button>
       </div>
@@ -778,8 +1674,69 @@ function AddSecondHandItemForm() {
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [sellerName, setSellerName] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (file: File, productName: string): Promise<string | null> => {
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.${fileExt}`;
+      const filePath = `products/${fileName}`;
+
+      const response = await fetch('/api/storage/sign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bucket: 'products',
+          filePath,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get upload URL');
+      }
+
+      const { url, fullPath } = await response.json();
+
+      const uploadResponse = await fetch(url, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      // Return the public URL
+      return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/products/${fileName}`;
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -787,6 +1744,13 @@ function AddSecondHandItemForm() {
     setError(null);
 
     try {
+      let imageUrl = '/placeholder.svg';
+      
+      // Upload image if provided
+      if (imageFile && name) {
+        imageUrl = (await uploadImage(imageFile, name)) || imageUrl;
+      }
+
       // First, create a regular product
       const productData = {
         name,
@@ -794,7 +1758,7 @@ function AddSecondHandItemForm() {
         price: parseFloat(price),
         stock_quantity: 1, // Second-hand items typically have quantity of 1
         description,
-        image_url: '/placeholder.svg', // Default image
+        image_url: imageUrl,
         is_featured: false, // Default value
       };
 
@@ -909,10 +1873,256 @@ function AddSecondHandItemForm() {
             required
           />
         </div>
+        <div className="grid gap-2">
+          <Label htmlFor="item-image">Product Image</Label>
+          <Input 
+            id="item-image" 
+            type="file" 
+            accept="image/*"
+            onChange={handleImageChange}
+          />
+          {imagePreview && (
+            <div className="mt-2">
+              <Image 
+                src={imagePreview} 
+                alt="Preview" 
+                width={100} 
+                height={100} 
+                className="object-cover rounded-md"
+              />
+            </div>
+          )}
+          {uploading && <p className="text-sm text-muted-foreground">Uploading image...</p>}
+        </div>
         {error && <div className="text-sm text-destructive text-center">{error}</div>}
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading || uploading}>
           {loading ? 'Adding...' : 'Add Product to Marketplace'}
         </Button>
+      </div>
+    </form>
+  );
+}
+
+function EditSecondHandProductForm({ product, onUpdate }: { product: any; onUpdate: (updatedProduct: any) => void }) {
+  const [name, setName] = useState(product.name || '');
+  const [category, setCategory] = useState(product.category || '');
+  const [condition, setCondition] = useState(product.condition || 'Like New');
+  const [price, setPrice] = useState(product.price?.toString() || '');
+  const [stock, setStock] = useState(product.stock_quantity?.toString() || '1');
+  const [description, setDescription] = useState(product.description || '');
+  const [sellerName, setSellerName] = useState(product.seller_name || '');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(product.image_url || null);
+  const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (file: File, productName: string): Promise<string | null> => {
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.${fileExt}`;
+      const filePath = `products/${fileName}`;
+
+      const response = await fetch('/api/storage/sign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bucket: 'products',
+          filePath,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get upload URL');
+      }
+
+      const { url, fullPath } = await response.json();
+
+      const uploadResponse = await fetch(url, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      // Return the public URL
+      return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/products/${fileName}`;
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      let imageUrl = product.image_url || '/placeholder.svg';
+      
+      // Upload image if provided
+      if (imageFile && name) {
+        imageUrl = (await uploadImage(imageFile, name)) || imageUrl;
+      }
+
+      // Prepare data for update
+      const updatedProduct = {
+        id: product.id, // second-hand product id
+        product_id: product.products?.id || product.product_id, // associated product id
+        name,
+        category: category || null,
+        condition,
+        price: parseFloat(price),
+        stock_quantity: stock ? parseInt(stock) : 1,
+        description,
+        image_url: imageUrl,
+        seller_name: sellerName,
+      };
+
+      onUpdate(updatedProduct);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="grid gap-4 py-4">
+        <div className="grid gap-2">
+          <Label htmlFor="edit-item-name">Item Name</Label>
+          <Input 
+            id="edit-item-name" 
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="edit-item-category">Category</Label>
+          <Input 
+            id="edit-item-category" 
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="edit-item-condition">Condition</Label>
+          <select 
+            id="edit-item-condition" 
+            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            value={condition}
+            onChange={(e) => setCondition(e.target.value)}
+          >
+            <option value="Like New">Like New</option>
+            <option value="Good">Good</option>
+            <option value="Fair">Fair</option>
+          </select>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="edit-asking-price">Asking Price (Ksh)</Label>
+            <Input 
+              id="edit-asking-price" 
+              type="number" 
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="edit-item-stock">Stock Quantity</Label>
+            <Input 
+              id="edit-item-stock" 
+              type="number" 
+              value={stock}
+              onChange={(e) => setStock(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="edit-seller-name">Seller Name</Label>
+          <Input 
+            id="edit-seller-name" 
+            value={sellerName}
+            onChange={(e) => setSellerName(e.target.value)}
+            required
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="edit-item-description">Description</Label>
+          <Textarea 
+            id="edit-item-description" 
+            className="min-h-[100px]" 
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="edit-item-image">Product Image</Label>
+          <Input 
+            id="edit-item-image" 
+            type="file" 
+            accept="image/*"
+            onChange={handleImageChange}
+          />
+          {imagePreview && (
+            <div className="mt-2">
+              <Image 
+                src={imagePreview} 
+                alt="Preview" 
+                width={100} 
+                height={100} 
+                className="object-cover rounded-md"
+              />
+            </div>
+          )}
+          {uploading && <p className="text-sm text-muted-foreground">Uploading image...</p>}
+        </div>
+        {error && <div className="text-sm text-destructive text-center">{error}</div>}
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => {
+            // Reset form to original values
+            setName(product.name || '');
+            setCategory(product.category || '');
+            setCondition(product.condition || 'Like New');
+            setPrice(product.price?.toString() || '');
+            setStock(product.stock_quantity?.toString() || '1');
+            setDescription(product.description || '');
+            setSellerName(product.seller_name || '');
+            setImagePreview(product.image_url || null);
+            setImageFile(null);
+          }}>
+            Reset
+          </Button>
+          <Button type="submit" disabled={loading || uploading}>
+            {loading || uploading ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </DialogFooter>
       </div>
     </form>
   );

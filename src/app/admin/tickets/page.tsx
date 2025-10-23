@@ -414,9 +414,9 @@ export default function TicketsPage() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Ticket</DialogTitle>
+            <DialogTitle>Cancel Ticket</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this ticket? This action cannot be undone.
+              Are you sure you want to cancel this ticket? This action will mark the ticket as cancelled.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -424,7 +424,7 @@ export default function TicketsPage() {
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleConfirmDelete}>
-              Confirm Delete
+              Confirm Cancel
             </Button>
           </DialogFooter>
         </DialogContent>

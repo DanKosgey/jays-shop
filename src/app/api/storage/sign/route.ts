@@ -1,23 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { getSupabaseAdminClient } from '@/server/supabase/admin';
-
-const SignInput = z.object({
-  bucket: z.enum(['ticket-attachments', 'product-images']),
-  path: z.string().min(1),
-  expiresIn: z.number().int().positive().max(60 * 60).default(300),
-});
+import { getSupabaseServerClient } from '@/server/supabase/server';
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const parsed = SignInput.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.message }, { status: 400 });
-  const { bucket, path, expiresIn } = parsed.data;
+  try {
+    const supabase = await getSupabaseServerClient();
+    
+    // Parse request body
+    const body = await req.json();
+    const { bucket, filePath } = body;
 
-  const supabaseAdmin = getSupabaseAdminClient();
+    // Validate required fields
+    if (!bucket || !filePath) {
+      return NextResponse.json(
+        { error: 'Missing required fields: bucket and filePath are required' }, 
+        { status: 400 }
+      );
+    }
 
-  const { data, error } = await supabaseAdmin.storage.from(bucket).createSignedUploadUrl(path, expiresIn);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    // Generate signed URL for upload
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .createSignedUploadUrl(filePath);
 
-  return NextResponse.json(data);
+    if (error) {
+      console.error('Error creating signed upload URL:', error);
+      return NextResponse.json(
+        { error: 'Failed to create upload URL', details: error.message }, 
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      url: data.signedUrl,
+      fullPath: data.path,
+    });
+  } catch (error: any) {
+    console.error('Unexpected error in storage sign API:', error);
+    return NextResponse.json(
+      { error: 'Internal server error', details: error.message }, 
+      { status: 500 }
+    );
+  }
 }
