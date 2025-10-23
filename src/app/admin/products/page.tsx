@@ -742,49 +742,36 @@ function AddNewProductForm() {
   };
 
   const uploadImage = async (file: File, productName: string): Promise<string | null> => {
+    if (!file) return null;
+    
+    setUploading(true);
+    
     try {
-      setUploading(true);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.${fileExt}`;
-      const filePath = `products/${fileName}`;
-
-      // Use the API endpoint to generate a signed upload URL
-      // This endpoint uses the service role key which bypasses RLS policies
-      const response = await fetch('/api/storage/sign', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          bucket: 'products',
-          filePath,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to get upload URL: ${errorData.error || 'Unknown error'}`);
-      }
-
-      const { url, fullPath } = await response.json();
-
-      // Upload the file using the signed URL
-      const uploadResponse = await fetch(url, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': file.type,
-        },
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error(`Failed to upload image: ${uploadResponse.status} ${uploadResponse.statusText}`);
-      }
-
-      // Instead of immediately verifying, we'll trust the successful upload
-      // and generate the public URL directly
-      // The public URL format is predictable for Supabase storage
+      // Generate a unique filename
+      const fileExtension = file.name.split('.').pop() || 'png';
+      const fileName = `${productName.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.${fileExtension}`;
+      
+      // Initialize Supabase client with service role for direct upload
+      // In a real application, this would be done server-side for security
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321';
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
+      
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Upload directly to the products bucket
+      const { data, error } = await supabase.storage
+        .from('products')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        throw new Error(`Failed to upload image: ${error.message}`);
+      }
+
+      // Return the public URL for the uploaded image
       return `${supabaseUrl}/storage/v1/object/public/products/${fileName}`;
     } catch (err) {
       console.error('Error uploading image:', err);
@@ -1091,49 +1078,36 @@ function AddSecondHandItemForm() {
   };
 
   const uploadImage = async (file: File, productName: string): Promise<string | null> => {
+    if (!file) return null;
+    
+    setUploading(true);
+    
     try {
-      setUploading(true);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.${fileExt}`;
-      const filePath = `products/${fileName}`;
-
-      // Use the API endpoint to generate a signed upload URL
-      // This endpoint uses the service role key which bypasses RLS policies
-      const response = await fetch('/api/storage/sign', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          bucket: 'products',
-          filePath,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to get upload URL: ${errorData.error || 'Unknown error'}`);
-      }
-
-      const { url, fullPath } = await response.json();
-
-      // Upload the file using the signed URL
-      const uploadResponse = await fetch(url, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': file.type,
-        },
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error(`Failed to upload image: ${uploadResponse.status} ${uploadResponse.statusText}`);
-      }
-
-      // Instead of immediately verifying, we'll trust the successful upload
-      // and generate the public URL directly
-      // The public URL format is predictable for Supabase storage
+      // Generate a unique filename
+      const fileExtension = file.name.split('.').pop() || 'png';
+      const fileName = `${productName.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.${fileExtension}`;
+      
+      // Initialize Supabase client with service role for direct upload
+      // In a real application, this would be done server-side for security
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321';
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
+      
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Upload directly to the products bucket
+      const { data, error } = await supabase.storage
+        .from('products')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        throw new Error(`Failed to upload image: ${error.message}`);
+      }
+
+      // Return the public URL for the uploaded image
       return `${supabaseUrl}/storage/v1/object/public/products/${fileName}`;
     } catch (err) {
       console.error('Error uploading image:', err);

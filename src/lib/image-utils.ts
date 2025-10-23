@@ -83,19 +83,37 @@ export function generateProductImageUrl(
 /**
  * Uploads an image to Supabase storage and returns the public URL
  * @param file - The file to upload
- * @param path - The path to store the file (e.g., 'products/product-name.jpg')
+ * @param fileName - The name to give the file in storage
  * @returns The public URL of the uploaded image
  */
 export async function uploadProductImage(
   file: File, 
-  path: string
+  fileName: string
 ): Promise<{ url: string; error: string | null }> {
   try {
-    // This would typically use the Supabase client
-    // For now, we'll return a placeholder
-    console.warn('Image upload functionality needs to be implemented with Supabase client');
+    // Initialize Supabase client with service role for direct upload
+    // In a real application, this would be done server-side for security
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321';
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
+    
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Upload directly to the products bucket
+    const { data, error } = await supabase.storage
+      .from('products')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      throw new Error(`Failed to upload image: ${error.message}`);
+    }
+
+    // Return the public URL for the uploaded image
     return {
-      url: `http://localhost:54321/storage/v1/object/public/products/${path}`,
+      url: `${supabaseUrl}/storage/v1/object/public/products/${fileName}`,
       error: null
     };
   } catch (error: any) {

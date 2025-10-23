@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/server/supabase/admin';
+import { getSupabaseServerClient } from '@/server/supabase/server';
 
 export async function GET(req: NextRequest) {
   try {
@@ -84,6 +85,14 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    // First, get the authenticated user
+    const supabaseServer = await getSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabaseServer.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized: User must be authenticated' }, { status: 401 });
+    }
+    
     const supabase = getSupabaseAdminClient();
     
     // Parse request body
@@ -100,9 +109,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid condition. Must be one of: Like New, Good, Fair' }, { status: 400 });
     }
     
-    // Prepare data for insertion
+    // Prepare data for insertion - include seller_id from authenticated user
     const secondHandProductData = {
       product_id: body.product_id,
+      seller_id: user.id, // Add the authenticated user as the seller
       condition: body.condition,
       seller_name: body.seller_name,
     };
