@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { 
   Search, Smartphone, Wrench, Cpu, Shield, Zap, ChevronRight, 
-  Sparkles, Star, Clock, Award, CheckCircle, Wifi, Battery, Signal
+  Sparkles, Star, Clock, Award, CheckCircle, Wifi, Battery, Signal,
+  Headphones, Camera, Gamepad2, Monitor, TabletIcon, Laptop, Watch, ShoppingCart, Store
 } from "lucide-react";
 import { Product } from "@/lib/types";
 import { useEffect, useState, Suspense, useRef, useCallback, useMemo } from "react";
@@ -50,7 +51,7 @@ function HomePageContent() {
 
   // Generate random phone icons only on client side to prevent hydration errors
   useEffect(() => {
-    const icons = Array.from({ length: 15 }, (_, i) => ({
+    const icons = Array.from({ length: 20 }, (_, i) => ({
       id: i,
       style: {
         width: `${Math.random() * 80 + 40}px`,
@@ -67,10 +68,10 @@ function HomePageContent() {
 
   // Generate binary rain only on client side to prevent hydration errors
   useEffect(() => {
-    const rain = Array.from({ length: 20 }, (_, i) => ({
+    const rain = Array.from({ length: 25 }, (_, i) => ({
       id: i,
       style: {
-        left: `${i * 5}%`,
+        left: `${i * 4}%`,
         animationDelay: `${i * -0.5}s`,
         animationDuration: `${Math.random() * 5 + 5}s`,
       },
@@ -131,7 +132,8 @@ function HomePageContent() {
           isFeatured: p.is_featured ?? false,
         }));
         
-        setFeaturedProducts(mapped.filter((p) => p.isFeatured).slice(0, 3));
+        // Show more products in the horizontal scroll (instead of just 3)
+        setFeaturedProducts(mapped.filter((p) => p.isFeatured));
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {
@@ -218,6 +220,17 @@ function HomePageContent() {
     { value: "50+", label: "Expert Technicians", icon: <Award className="w-5 h-5" /> }
   ], []);
 
+  const deviceTypes = useMemo(() => [
+    { icon: <Smartphone className="w-6 h-6" />, name: "Smartphones" },
+    { icon: <Headphones className="w-6 h-6" />, name: "Headphones" },
+    { icon: <TabletIcon className="w-6 h-6" />, name: "Tablets" },
+    { icon: <Monitor className="w-6 h-6" />, name: "Laptops" },
+    { icon: <Gamepad2 className="w-6 h-6" />, name: "Gaming" },
+    { icon: <Watch className="w-6 h-6" />, name: "Wearables" },
+    { icon: <Camera className="w-6 h-6" />, name: "Cameras" },
+    { icon: <Monitor className="w-6 h-6" />, name: "Monitors" },
+  ], []);
+
   const isVisible = useCallback((id: string) => visibleElements.has(id), [visibleElements]);
 
   // Scroll to section function
@@ -275,6 +288,8 @@ function HomePageContent() {
           { Icon: Zap, delay: 6, duration: 14, x: 85, y: 60 },
           { Icon: Shield, delay: 8, duration: 16, x: 50, y: 15 },
           { Icon: Wrench, delay: 10, duration: 13, x: 70, y: 80 },
+          { Icon: Cpu, delay: 12, duration: 17, x: 30, y: 40 },
+          { Icon: Headphones, delay: 14, duration: 19, x: 60, y: 25 },
         ].map((item, i) => {
           const Icon = item.Icon;
           return (
@@ -328,14 +343,14 @@ function HomePageContent() {
 
         <div className="relative z-10 max-w-6xl mx-auto text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-500/5 backdrop-blur-xl rounded-full border border-blue-400/20 animate-slide-down">
+          <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-500/5 backdrop-blur-xl rounded-full border border-blue-400/20 animate-slide-down mb-6">
             <Sparkles className="w-4 h-4 text-blue-400 animate-spin-slow" />
             <span className="text-sm font-medium">Expert Technicians • Same-Day Service</span>
             <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
           </div>
 
           {/* Main heading */}
-          <h1 className="text-5xl sm:text-6xl md:text-8xl font-black mb-6 animate-fade-scale">
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black mb-6 animate-fade-scale">
             <span className="block mb-2 text-white drop-shadow-2xl">Premium Phone Repair</span>
             <span className="block bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500 bg-clip-text text-transparent animate-shimmer" style={{backgroundSize: '200% 100%'}}>
               Done Right the First Time
@@ -350,9 +365,26 @@ function HomePageContent() {
           </div>
 
           <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed animate-fade-in-up font-light">
-            Fast, reliable, and affordable phone repair services with a <span className="text-blue-400 font-semibold">90-day warranty</span>. 
-            Get your device back in perfect condition in under <span className="text-blue-400 font-semibold">60 minutes</span>.
+            Experience lightning-fast phone repair that won't break the bank. 
+            <span className="text-blue-400 font-semibold"> Most devices repaired within 24 hours</span>, 
+            so you're never without your essential tech for long.
           </p>
+
+          {/* Device Types */}
+          <div className="mb-10 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            <h3 className="text-lg font-medium text-gray-400 mb-4">We repair all major devices:</h3>
+            <div className="flex flex-wrap justify-center gap-4">
+              {deviceTypes.map((device, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-sm rounded-full border border-white/10 hover:border-blue-400/30 transition-all duration-300"
+                >
+                  {device.icon}
+                  <span className="text-sm">{device.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* Search form */}
           <div className="max-w-2xl mx-auto mb-8 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
@@ -382,6 +414,22 @@ function HomePageContent() {
             </form>
           </div>
           
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
+            <Button asChild size="lg" className="px-8 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl">
+              <Link href="/shop">
+                Shop Accessories
+                <ShoppingCart className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+            <Button asChild size="lg" className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl">
+              <Link href="/marketplace">
+                Browse Marketplace
+                <ShoppingCart className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+          </div>
+          
           {/* Scroll Down Indicator */}
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center animate-bounce cursor-pointer" onClick={() => scrollToSection('featured-products')}>
             <span className="text-sm mb-2">Scroll to explore</span>
@@ -391,7 +439,7 @@ function HomePageContent() {
       </section>
 
       {/* Featured Products Section - Moved to top */}
-      <section id="featured-products" className="relative py-12 px-4 sm:px-6 bg-gradient-to-b from-slate-950/50 to-slate-900/50">
+      <section id="featured-products" className="relative py-16 px-4 sm:px-6 bg-gradient-to-b from-slate-950/50 to-slate-900/50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-500/5 backdrop-blur-xl rounded-full border border-blue-400/20 animate-slide-down mb-4">
@@ -404,52 +452,63 @@ function HomePageContent() {
             <p className="text-lg text-gray-400 max-w-2xl mx-auto">
               Upgrade your hardware with our curated selection of high-performance accessories
             </p>
+            {/* Scroll indicator for mobile users */}
+            <div className="mt-4 flex justify-center md:hidden">
+              <div className="flex items-center text-sm text-gray-400">
+                <ChevronRight className="h-4 w-4 rotate-180" />
+                <span className="mx-2">Scroll to view more</span>
+                <ChevronRight className="h-4 w-4" />
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading ? (
-              <div className="col-span-3 text-center py-8">
-                <p className="text-gray-400">Loading products...</p>
-              </div>
-            ) : featuredProducts.length > 0 ? (
-              featuredProducts.map((product, index) => (
-                <div
-                  key={product.id}
-                  id={`product-${index}`}
-                  data-animate
-                  className={`group relative rounded-2xl transition-all duration-500 hover:scale-105 ${
-                    isVisible(`product-${index}`) ? 'opacity-100 translate-y-0' : 'opacity-100 translate-y-0'
-                  }`}
-                  style={{ transitionDelay: `${index * 0.1}s` } as React.CSSProperties}
-                >
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500" />
-                  <Card className="relative bg-gradient-to-br from-white/3 to-white/5 backdrop-blur-xl border border-white/5 rounded-2xl overflow-hidden h-full group-hover:border-purple-400/30 transition-all">
-                    <CardHeader className="p-0">
-                      <div className="aspect-square overflow-hidden bg-slate-900 rounded-t-2xl">
-                        <Image
-                          src={product.imageUrl}
-                          alt={product.name}
-                          width={400}
-                          height={400}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          priority={index < 3}
-                        />
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-5">
-                      <h3 className="text-lg font-bold mb-2 line-clamp-2">{product.name}</h3>
-                      <p className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-3">
-                        Ksh {product.price.toFixed(2)}
-                      </p>
-                    </CardContent>
-                  </Card>
+          {/* Horizontal scrolling products container */}
+          <div className="overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide flex items-center justify-start md:justify-center">
+            <div className="flex space-x-6 mx-auto" style={{ minWidth: 'max-content' }}>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8 min-w-full">
+                  <p className="text-gray-400">Loading products...</p>
                 </div>
-              ))
-            ) : (
-              <div className="col-span-3 text-center py-8">
-                <p className="text-gray-400">No featured products available</p>
-              </div>
-            )}
+              ) : featuredProducts.length > 0 ? (
+                featuredProducts.map((product, index) => (
+                  <div
+                    key={product.id}
+                    className="group relative rounded-2xl transition-all duration-500 hover:scale-105 flex-shrink-0 w-72 md:w-80"
+                  >
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500" />
+                    <Card className="relative bg-gradient-to-br from-white/3 to-white/5 backdrop-blur-xl border border-white/5 rounded-2xl overflow-hidden h-full group-hover:border-purple-400/30 transition-all">
+                      <CardHeader className="p-0">
+                        <div className="aspect-square overflow-hidden bg-slate-900 rounded-t-2xl">
+                          <Image
+                            src={product.imageUrl}
+                            alt={product.name}
+                            width={400}
+                            height={400}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            priority={index < 3}
+                          />
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-5">
+                        <h3 className="text-lg font-bold mb-2 line-clamp-2">{product.name}</h3>
+                        <p className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-3">
+                          Ksh {product.price.toFixed(2)}
+                        </p>
+                        <Button asChild size="sm" className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                          <Link href={`/product/${product.slug}`}>
+                            View Details
+                          </Link>
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center justify-center py-8" style={{ minWidth: '100%' }}>
+                  <p className="text-gray-400">No featured products available</p>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="text-center mt-8">
@@ -577,6 +636,49 @@ function HomePageContent() {
                   <p className="text-gray-400">{feature.description}</p>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section id="testimonials" className="relative py-20 px-4 sm:px-6 bg-gradient-to-b from-slate-900/50 to-slate-950/50">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl sm:text-5xl font-black mb-4 bg-gradient-to-r from-amber-400 via-orange-300 to-amber-500 bg-clip-text text-transparent">
+              What Our Customers Say
+            </h2>
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+              Don't just take our word for it - hear from our satisfied customers
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[1, 2, 3].map((_, index) => (
+              <Card key={index} className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden">
+                <CardContent className="p-8">
+                  <div className="flex items-center mb-6">
+                    <div className="flex text-amber-400">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="w-5 h-5 fill-current" />
+                      ))}
+                    </div>
+                    <span className="ml-2 text-amber-400 font-bold">5.0</span>
+                  </div>
+                  <p className="text-gray-300 mb-6 italic">
+                    "The repair was completed faster than expected and the quality is exceptional. My phone looks and works like new!"
+                  </p>
+                  <div className="flex items-center">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center mr-4">
+                      <span className="font-bold">JD</span>
+                    </div>
+                    <div>
+                      <h4 className="font-bold">John Doe</h4>
+                      <p className="text-sm text-gray-400">iPhone 14 Pro Repair</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>

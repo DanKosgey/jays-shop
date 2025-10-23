@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '@/server/supabase/server';
-import { Sidebar } from '../components/sidebar';
 import { cache } from 'react';
 
 // Cache the admin check to prevent duplicate queries
@@ -72,7 +71,7 @@ export default async function ProtectedAdminLayout({
 
   return (
     <div className="flex min-h-screen w-full bg-slate-50">
-      <Sidebar />
+      {/* Sidebar is now rendered in the main admin layout */}
       <div className="flex flex-col flex-1 sm:ml-64">
         <main className="flex-1 p-6">
           {children}

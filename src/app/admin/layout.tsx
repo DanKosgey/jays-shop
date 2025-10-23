@@ -10,8 +10,10 @@ export default async function AdminLayout({
   
   return (
     <div className="flex min-h-screen w-full bg-slate-50">
-      {/* No sidebar in the main admin layout - it will be rendered in protected layouts */}
-      <div className="flex flex-col flex-1">
+      {/* Render the sidebar in the main admin layout - hidden on mobile, visible on md and up */}
+      <Sidebar />
+      {/* Content area - no margin on mobile, left margin on md and up to account for sidebar */}
+      <div className="flex flex-col flex-1 md:ml-64">
         <main className="flex-1 p-6">
           {children}
         </main>

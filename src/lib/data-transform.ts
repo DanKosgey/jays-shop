@@ -53,6 +53,19 @@ export function transformProductData(apiProduct: any): Product {
   };
 }
 
+// Transform second-hand product data from API format to client format
+export function transformSecondHandProductData(apiSecondHandProduct: any): any {
+  // First transform the base product data
+  const baseProduct = transformProductData(apiSecondHandProduct);
+  
+  // Then add the second-hand specific fields
+  return {
+    ...baseProduct,
+    condition: apiSecondHandProduct.condition ?? 'Good',
+    sellerName: apiSecondHandProduct.seller_name ?? 'Unknown Seller',
+  };
+}
+
 // Transform array of tickets
 export function transformTicketsData(apiTickets: any[]): RepairTicket[] {
   return apiTickets.map(transformTicketData);
@@ -61,6 +74,11 @@ export function transformTicketsData(apiTickets: any[]): RepairTicket[] {
 // Transform array of products
 export function transformProductsData(apiProducts: any[]): Product[] {
   return apiProducts.map(transformProductData);
+}
+
+// Transform array of second-hand products
+export function transformSecondHandProductsData(apiSecondHandProducts: any[]): any[] {
+  return apiSecondHandProducts.map(transformSecondHandProductData);
 }
 
 // Validate ticket data

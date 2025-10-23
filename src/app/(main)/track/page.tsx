@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Search, Hourglass, CheckCircle, Wrench, Package, Microscope, ShieldQuestion, CircleDotDashed, XCircle, Loader2, AlertCircle, RotateCcw } from "lucide-react";
+import { Search, Hourglass, CheckCircle, Wrench, Package, Microscope, ShieldQuestion, CircleDotDashed, XCircle, Loader2, AlertCircle, RotateCcw, Calendar, Clock, User, Smartphone } from "lucide-react";
 import type { RepairTicket } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { fetchTickets } from "@/lib/data-fetching";
@@ -243,7 +243,7 @@ function TrackPageContent() {
   return (
     <div className="container max-w-5xl mx-auto py-12 px-4">
       <div className="text-center mb-8">
-        <h1 className="text-4xl md:text-5xl font-headline font-bold mb-3 tracking-wide">
+        <h1 className="text-4xl md:text-5xl font-headline font-bold mb-3 tracking-wide bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
           Repair Status Matrix
         </h1>
         <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">
@@ -286,7 +286,7 @@ function TrackPageContent() {
               <Button 
                 type="submit" 
                 size="lg" 
-                className="w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90" 
+                className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600" 
                 disabled={loading || !searchQuery.trim()}
               >
                 {loading ? (
@@ -335,14 +335,19 @@ function TrackPageContent() {
             {tickets.map((t) => (
               <Card 
                 key={t.id} 
-                className="cursor-pointer hover:bg-accent/10 transition-colors"
+                className="cursor-pointer hover:bg-accent/10 transition-colors border-border/50"
                 onClick={() => selectTicket(t)}
               >
                 <CardContent className="p-4">
                   <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-headline font-semibold">{t.ticketNumber}</h3>
-                      <p className="text-sm text-muted-foreground">{t.deviceBrand} {t.deviceModel}</p>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-accent/10">
+                        <Smartphone className="h-5 w-5 text-accent" />
+                      </div>
+                      <div>
+                        <h3 className="font-headline font-semibold">{t.ticketNumber}</h3>
+                        <p className="text-sm text-muted-foreground">{t.deviceBrand} {t.deviceModel}</p>
+                      </div>
                     </div>
                     <div className="text-right">
                       <p className={cn(
@@ -353,8 +358,9 @@ function TrackPageContent() {
                       )}>
                         {t.status.replace('_', ' ')}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        Created: {formatDate(t.createdAt)}
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {formatDate(t.createdAt)}
                       </p>
                     </div>
                   </div>
@@ -372,9 +378,10 @@ function TrackPageContent() {
               <div>
                 <CardTitle className="text-2xl font-headline flex items-center gap-3 flex-wrap">
                   <span className="text-accent">Service Tag:</span>
-                  <span className="font-mono">{ticket.ticketNumber}</span>
+                  <span className="font-mono bg-accent/10 px-3 py-1 rounded-md">{ticket.ticketNumber}</span>
                 </CardTitle>
-                <CardDescription className="mt-2">
+                <CardDescription className="mt-2 flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
                   Data stream last updated: {formatDateTime(ticket.updatedAt)}
                 </CardDescription>
               </div>
@@ -382,8 +389,9 @@ function TrackPageContent() {
                 variant="outline" 
                 size="sm"
                 onClick={handleTryAgain}
+                className="flex items-center gap-2"
               >
-                <Search className="mr-2 h-4 w-4" />
+                <Search className="h-4 w-4" />
                 New Search
               </Button>
             </div>
@@ -393,54 +401,69 @@ function TrackPageContent() {
             <div className="md:col-span-1 space-y-6">
               <Card className="bg-background/40 border-border/30">
                 <CardHeader>
-                  <CardTitle className="text-lg font-headline">Unit Information</CardTitle>
+                  <CardTitle className="text-lg font-headline flex items-center gap-2">
+                    <Smartphone className="h-5 w-5" />
+                    Unit Information
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm space-y-2 text-muted-foreground">
-                  <p>
-                    <strong className="text-foreground font-medium">Device:</strong>{" "}
-                    {ticket.deviceBrand} {ticket.deviceModel}
-                  </p>
-                  <p>
-                    <strong className="text-foreground font-medium">Type:</strong>{" "}
-                    {ticket.deviceType}
-                  </p>
-                  <p>
-                    <strong className="text-foreground font-medium">Customer:</strong>{" "}
-                    {ticket.customerName}
-                  </p>
-                  <p>
-                    <strong className="text-foreground font-medium">Priority:</strong>{" "}
+                <CardContent className="text-sm space-y-3 text-muted-foreground">
+                  <div className="flex justify-between py-2 border-b border-border/20">
+                    <span className="text-foreground font-medium">Device</span>
+                    <span>{ticket.deviceBrand} {ticket.deviceModel}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-border/20">
+                    <span className="text-foreground font-medium">Type</span>
+                    <span>{ticket.deviceType}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-border/20">
+                    <span className="text-foreground font-medium">Customer</span>
+                    <span className="flex items-center gap-1">
+                      <User className="h-4 w-4" />
+                      {ticket.customerName}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-foreground font-medium">Priority</span>
                     <span className={cn("capitalize font-semibold", getPriorityColor(ticket.priority))}>
                       {ticket.priority}
                     </span>
-                  </p>
+                  </div>
                 </CardContent>
               </Card>
               
               <Card className="bg-background/40 border-border/30">
                 <CardHeader>
-                  <CardTitle className="text-lg font-headline">Financials & Timeline</CardTitle>
+                  <CardTitle className="text-lg font-headline flex items-center gap-2">
+                    <span className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center text-xs text-white">₵</span>
+                    Financials & Timeline
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm space-y-2 text-muted-foreground">
-                  <p>
-                    <strong className="text-foreground font-medium">Est. Cost:</strong>{" "}
-                    {ticket.estimatedCost ? `Ksh${ticket.estimatedCost.toFixed(2)}` : 'Pending'}
-                  </p>
-                  <p>
-                    <strong className="text-foreground font-medium">Final Cost:</strong>{" "}
-                    {ticket.finalCost ? `Ksh${ticket.finalCost.toFixed(2)}` : 'Pending'}
-                  </p>
-                  <p>
-                    <strong className="text-foreground font-medium">Est. Completion:</strong>{" "}
-                    {ticket.estimatedCompletion ? formatDate(ticket.estimatedCompletion) : 'Pending'}
-                  </p>
+                <CardContent className="text-sm space-y-3 text-muted-foreground">
+                  <div className="flex justify-between py-2 border-b border-border/20">
+                    <span className="text-foreground font-medium">Est. Cost</span>
+                    <span>{ticket.estimatedCost ? `Ksh${ticket.estimatedCost.toFixed(2)}` : 'Pending'}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-border/20">
+                    <span className="text-foreground font-medium">Final Cost</span>
+                    <span>{ticket.finalCost ? `Ksh${ticket.finalCost.toFixed(2)}` : 'Pending'}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-foreground font-medium">Est. Completion</span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      {ticket.estimatedCompletion ? formatDate(ticket.estimatedCompletion) : 'Pending'}
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
             </div>
 
             {/* Right Column - Timeline */}
             <div className="md:col-span-2">
-              <h3 className="font-headline font-bold text-xl mb-6">Repair Progress Timeline</h3>
+              <h3 className="font-headline font-bold text-xl mb-6 flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Repair Progress Timeline
+              </h3>
               <div className="relative">
                 <div className="absolute left-5 top-0 h-full w-0.5 bg-border -z-10" />
                 <div className="space-y-8">
@@ -454,11 +477,11 @@ function TrackPageContent() {
                       <div key={status} className="flex items-start gap-4 relative">
                         <div 
                           className={cn(
-                            "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center z-10 transition-all duration-300",
-                            isCompleted && !isCancelled && 'bg-accent text-accent-foreground',
-                            isCurrent && !isCancelled && 'bg-accent text-accent-foreground ring-4 ring-accent/30 scale-110',
-                            isFuture && 'bg-muted text-muted-foreground',
-                            isCancelled && 'bg-muted text-muted-foreground opacity-50'
+                            "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center z-10 transition-all duration-300 border-2",
+                            isCompleted && !isCancelled && 'bg-accent text-accent-foreground border-accent',
+                            isCurrent && !isCancelled && 'bg-accent text-accent-foreground ring-4 ring-accent/30 scale-110 border-accent',
+                            isFuture && 'bg-muted text-muted-foreground border-border',
+                            isCancelled && 'bg-muted text-muted-foreground opacity-50 border-border'
                           )}
                         >
                           {STATUS_INFO[status].icon}
@@ -466,7 +489,7 @@ function TrackPageContent() {
                         <div className="pt-1.5 flex-1">
                           <p 
                             className={cn(
-                              "font-semibold font-headline transition-colors",
+                              "font-semibold font-headline transition-colors text-lg",
                               isCurrent && !isCancelled ? "text-accent" : "text-foreground",
                               isCancelled && "opacity-50"
                             )}
@@ -475,12 +498,18 @@ function TrackPageContent() {
                           </p>
                           <p 
                             className={cn(
-                              "text-sm text-muted-foreground",
+                              "text-sm text-muted-foreground mt-1",
                               isCancelled && "opacity-50"
                             )}
                           >
                             {STATUS_INFO[status].description}
                           </p>
+                          {isCurrent && !isCancelled && (
+                            <div className="mt-2 inline-flex items-center gap-1 text-xs bg-accent/10 text-accent px-2 py-1 rounded-full">
+                              <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+                              In Progress
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -489,14 +518,14 @@ function TrackPageContent() {
                   {/* Cancelled Status (shown separately if applicable) */}
                   {ticket.status === 'cancelled' && (
                     <div className="flex items-start gap-4 relative">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center z-10 bg-destructive text-destructive-foreground ring-4 ring-destructive/30 scale-110">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center z-10 bg-destructive text-destructive-foreground ring-4 ring-destructive/30 scale-110 border-2 border-destructive">
                         {STATUS_INFO.cancelled.icon}
                       </div>
                       <div className="pt-1.5 flex-1">
-                        <p className="font-semibold font-headline text-destructive">
+                        <p className="font-semibold font-headline text-destructive text-lg">
                           {STATUS_INFO.cancelled.text}
                         </p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground mt-1">
                           {STATUS_INFO.cancelled.description}
                         </p>
                       </div>
@@ -510,10 +539,13 @@ function TrackPageContent() {
             <div className="md:col-span-3">
               <Card className="bg-background/40 border-border/30">
                 <CardHeader>
-                  <CardTitle className="text-lg font-headline">Technician's Log: Issue Description</CardTitle>
+                  <CardTitle className="text-lg font-headline flex items-center gap-2">
+                    <Microscope className="h-5 w-5" />
+                    Technician's Log: Issue Description
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground font-mono whitespace-pre-wrap leading-relaxed">
+                  <p className="text-sm text-muted-foreground font-mono whitespace-pre-wrap leading-relaxed bg-muted/50 p-4 rounded-lg">
                     {ticket.issueDescription || 'No description available.'}
                   </p>
                 </CardContent>

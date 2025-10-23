@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/server/supabase/admin';
 import { getSupabaseServerClient } from '@/server/supabase/server';
+import { getFallbackImageUrl } from '@/lib/image-utils';
 
 export async function GET(req: NextRequest) {
   try {
@@ -50,13 +51,23 @@ export async function GET(req: NextRequest) {
         }
 
         // Transform the data to match the expected format
+        const productData = Array.isArray(data.products) ? data.products[0] : data.products;
+        
         const product = {
           id: data.id,
           condition: data.condition,
           seller_name: data.seller_name,
           created_at: data.created_at,
           updated_at: data.updated_at,
-          ...data.products
+          // Product fields with fallbacks
+          name: productData?.name || 'Unnamed Product',
+          slug: productData?.slug || '',
+          category: productData?.category || 'Uncategorized',
+          description: productData?.description || 'No description available',
+          price: productData?.price ? Number(productData.price) : 0,
+          stock_quantity: typeof productData?.stock_quantity === 'number' ? productData.stock_quantity : 0,
+          image_url: productData?.image_url || getFallbackImageUrl(),
+          is_featured: typeof productData?.is_featured === 'boolean' ? productData.is_featured : false,
         };
 
         return NextResponse.json({
@@ -114,14 +125,27 @@ export async function GET(req: NextRequest) {
 
     // Transform the data to match the expected format
     // Add safety check for item.products
-    const transformedData = (data || []).map((item: any) => ({
-      id: item.id,
-      condition: item.condition,
-      seller_name: item.seller_name,
-      created_at: item.created_at,
-      updated_at: item.updated_at,
-      ...(item.products || {}) // Safely spread the product data
-    }));
+    const transformedData = (data || []).map((item: any) => {
+      // Ensure we have valid product data
+      const productData = Array.isArray(item.products) ? item.products[0] : item.products;
+      
+      return {
+        id: item.id,
+        condition: item.condition,
+        seller_name: item.seller_name,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        // Product fields with fallbacks
+        name: productData?.name || 'Unnamed Product',
+        slug: productData?.slug || '',
+        category: productData?.category || 'Uncategorized',
+        description: productData?.description || 'No description available',
+        price: productData?.price ? Number(productData.price) : 0,
+        stock_quantity: typeof productData?.stock_quantity === 'number' ? productData.stock_quantity : 0,
+        image_url: productData?.image_url || getFallbackImageUrl(),
+        is_featured: typeof productData?.is_featured === 'boolean' ? productData.is_featured : false,
+      };
+    });
 
     return NextResponse.json({
       products: transformedData,

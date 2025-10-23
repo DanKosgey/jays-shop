@@ -333,7 +333,7 @@ export default function ProductsPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Second-Hand Items</CardTitle>
+              <CardTitle className="text-sm font-medium">Marketplace Items</CardTitle>
               <Eye className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -502,31 +502,31 @@ export default function ProductsPage() {
           <CardHeader>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div>
-                <CardTitle>Second-Hand Marketplace</CardTitle>
-                <CardDescription>Manage items listed in the second-hand marketplace.</CardDescription>
+                <CardTitle>Marketplace Listings</CardTitle>
+                <CardDescription>Manage items listed in the marketplace.</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            {secondHandLoading && <div className="text-sm text-muted-foreground py-4">Loading second-hand products...</div>}
+            {secondHandLoading && <div className="text-sm text-muted-foreground py-4">Loading marketplace products...</div>}
             {secondHandError && <div className="text-sm text-destructive py-4">{secondHandError}</div>}
             {!secondHandLoading && !secondHandError && secondHandProducts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <Eye className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">No second-hand products found</h3>
+                <h3 className="text-lg font-medium">No marketplace products found</h3>
                 <p className="text-muted-foreground mb-4">
-                  Get started by adding a new second-hand product to the marketplace.
+                  Get started by adding a new marketplace product.
                 </p>
                 <Dialog open={isAddSecondHandOpen} onOpenChange={setIsAddSecondHandOpen}>
                   <DialogTrigger asChild>
                     <Button onClick={() => setIsAddSecondHandOpen(true)}>
                       <PlusCircle className="mr-2 h-4 w-4" />
-                      Add Second-Hand Product
+                      Add Marketplace Product
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[480px]">
                     <DialogHeader>
-                      <DialogTitle>Add Second-Hand Product</DialogTitle>
+                      <DialogTitle>Add Marketplace Product</DialogTitle>
                       <DialogDescription>
                         Add a new used or refurbished item to the marketplace.
                       </DialogDescription>
@@ -1146,7 +1146,7 @@ function AddSecondHandItemForm() {
         name,
         category: category || null,
         price: parseFloat(price),
-        stock_quantity: 1, // Second-hand items typically have quantity of 1
+        stock_quantity: 1, // Marketplace items typically have quantity of 1
         description,
         image_url: imageUrl,
         is_featured: false, // Default value
@@ -1167,30 +1167,30 @@ function AddSecondHandItemForm() {
 
       const newProduct = await productResponse.json();
       
-      // Then, create a second-hand product entry that references this product
-      const secondHandData = {
+      // Then, create a marketplace product entry that references this product
+      const marketplaceData = {
         product_id: newProduct.id,
         condition,
         seller_name: sellerName,
       };
 
-      const secondHandResponse = await fetch('/api/second-hand-products', {
+      const marketplaceResponse = await fetch('/api/second-hand-products', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(secondHandData),
+        body: JSON.stringify(marketplaceData),
       });
 
-      if (!secondHandResponse.ok) {
-        const errorData = await secondHandResponse.json();
-        throw new Error(errorData.error || 'Failed to create second-hand product entry');
+      if (!marketplaceResponse.ok) {
+        const errorData = await marketplaceResponse.json();
+        throw new Error(errorData.error || 'Failed to create marketplace product entry');
       }
 
       // Reset form
       resetForm();
       
-      // Reload the page to show the new product
+      // Close the dialog and refresh the data
       window.location.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
@@ -1203,10 +1203,10 @@ function AddSecondHandItemForm() {
     <form onSubmit={handleSubmit}>
       <div className="grid gap-4 py-4">
         <div className="grid gap-2">
-          <Label htmlFor="item-name">Item Name</Label>
+          <Label htmlFor="marketplace-item-name">Item Name</Label>
           <Input 
-            id="item-name" 
-            placeholder="e.g., Used iPhone 12 Pro" 
+            id="marketplace-item-name" 
+            placeholder="e.g., iPhone 12 Pro Max" 
             value={name}
             onChange={(e) => {
               setName(e.target.value);
@@ -1224,9 +1224,9 @@ function AddSecondHandItemForm() {
           {fieldErrors.name && <p className="text-sm text-red-500">{fieldErrors.name}</p>}
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="item-category">Category</Label>
+          <Label htmlFor="marketplace-item-category">Category</Label>
           <Input 
-            id="item-category" 
+            id="marketplace-item-category" 
             placeholder="e.g., Smartphones" 
             value={category}
             onChange={(e) => {
@@ -1243,45 +1243,68 @@ function AddSecondHandItemForm() {
           />
           {fieldErrors.category && <p className="text-sm text-red-500">{fieldErrors.category}</p>}
         </div>
-        <div className="grid gap-2">
-          <Label htmlFor="item-condition">Condition</Label>
-          <select 
-            id="item-condition" 
-            className={`flex h-10 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${fieldErrors.condition ? 'border-red-500' : ''}`}
-            value={condition}
-            onChange={(e) => setCondition(e.target.value)}
-          >
-            <option value="Like New">Like New</option>
-            <option value="Good">Good</option>
-            <option value="Fair">Fair</option>
-          </select>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="marketplace-item-condition">Condition</Label>
+            <select
+              id="marketplace-item-condition"
+              value={condition}
+              onChange={(e) => setCondition(e.target.value as any)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="Like New">Like New</option>
+              <option value="Good">Good</option>
+              <option value="Fair">Fair</option>
+            </select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="marketplace-item-price">Price (Ksh)</Label>
+            <Input 
+              id="marketplace-item-price" 
+              type="number" 
+              placeholder="e.g., 45000" 
+              value={price}
+              onChange={(e) => {
+                setPrice(e.target.value);
+                if (fieldErrors.price) {
+                  setFieldErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.price;
+                    return newErrors;
+                  });
+                }
+              }}
+              className={fieldErrors.price ? 'border-red-500' : ''}
+              required
+            />
+            {fieldErrors.price && <p className="text-sm text-red-500">{fieldErrors.price}</p>}
+          </div>
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="asking-price">Asking Price (Ksh)</Label>
-          <Input 
-            id="asking-price" 
-            type="number" 
-            placeholder="e.g., 60000" 
-            value={price}
+          <Label htmlFor="marketplace-item-description">Description</Label>
+          <Textarea 
+            id="marketplace-item-description" 
+            placeholder="Describe the item's condition, features, etc..." 
+            className={`min-h-[100px] ${fieldErrors.description ? 'border-red-500' : ''}`}
+            value={description}
             onChange={(e) => {
-              setPrice(e.target.value);
-              if (fieldErrors.price) {
+              setDescription(e.target.value);
+              if (fieldErrors.description) {
                 setFieldErrors(prev => {
                   const newErrors = { ...prev };
-                  delete newErrors.price;
+                  delete newErrors.description;
                   return newErrors;
                 });
               }
             }}
-            className={fieldErrors.price ? 'border-red-500' : ''}
             required
           />
-          {fieldErrors.price && <p className="text-sm text-red-500">{fieldErrors.price}</p>}
+          {fieldErrors.description && <p className="text-sm text-red-500">{fieldErrors.description}</p>}
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="seller-name">Seller Name</Label>
+          <Label htmlFor="marketplace-seller-name">Seller Name</Label>
           <Input 
-            id="seller-name" 
+            id="marketplace-seller-name" 
             placeholder="e.g., John Doe" 
             value={sellerName}
             onChange={(e) => {
@@ -1300,30 +1323,9 @@ function AddSecondHandItemForm() {
           {fieldErrors.sellerName && <p className="text-sm text-red-500">{fieldErrors.sellerName}</p>}
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="item-description">Description</Label>
-          <Textarea 
-            id="item-description" 
-            placeholder="Describe the item, including any wear and tear." 
-            className={`min-h-[100px] ${fieldErrors.description ? 'border-red-500' : ''}`}
-            value={description}
-            onChange={(e) => {
-              setDescription(e.target.value);
-              if (fieldErrors.description) {
-                setFieldErrors(prev => {
-                  const newErrors = { ...prev };
-                  delete newErrors.description;
-                  return newErrors;
-                });
-              }
-            }}
-            required
-          />
-          {fieldErrors.description && <p className="text-sm text-red-500">{fieldErrors.description}</p>}
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="item-image">Product Image</Label>
+          <Label htmlFor="marketplace-item-image">Item Image</Label>
           <Input 
-            id="item-image" 
+            id="marketplace-item-image" 
             type="file" 
             accept="image/*"
             onChange={handleImageChange}
@@ -1345,7 +1347,7 @@ function AddSecondHandItemForm() {
         </div>
         {error && <div className="text-sm text-destructive text-center">{error}</div>}
         <Button type="submit" disabled={loading || uploading}>
-          {loading ? 'Adding...' : 'Add Product to Marketplace'}
+          {loading || uploading ? 'Creating...' : 'Add Marketplace Product'}
         </Button>
       </div>
     </form>

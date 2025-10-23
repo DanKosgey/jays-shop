@@ -1,24 +1,24 @@
--- Implement proper data archiving strategy for soft deleted records
+-- Fix archive table structure and trigger function for proper deletion
 
--- Add deleted_at column to all tables for soft delete functionality
-ALTER TABLE public.profiles ADD COLUMN deleted_at TIMESTAMPTZ;
-ALTER TABLE public.products ADD COLUMN deleted_at TIMESTAMPTZ;
-ALTER TABLE public.tickets ADD COLUMN deleted_at TIMESTAMPTZ;
-ALTER TABLE public.orders ADD COLUMN deleted_at TIMESTAMPTZ;
-ALTER TABLE public.order_items ADD COLUMN deleted_at TIMESTAMPTZ;
-ALTER TABLE public.customers ADD COLUMN deleted_at TIMESTAMPTZ;
-ALTER TABLE public.second_hand_products ADD COLUMN deleted_at TIMESTAMPTZ;
+-- Drop existing triggers
+DROP TRIGGER IF EXISTS archive_deleted_profiles ON public.profiles;
+DROP TRIGGER IF EXISTS archive_deleted_products ON public.products;
+DROP TRIGGER IF EXISTS archive_deleted_tickets ON public.tickets;
+DROP TRIGGER IF EXISTS archive_deleted_orders ON public.orders;
+DROP TRIGGER IF EXISTS archive_deleted_order_items ON public.order_items;
+DROP TRIGGER IF EXISTS archive_deleted_customers ON public.customers;
+DROP TRIGGER IF EXISTS archive_deleted_second_hand_products ON public.second_hand_products;
 
--- Create indexes for deleted_at columns
-CREATE INDEX idx_profiles_deleted_at ON public.profiles(deleted_at) WHERE deleted_at IS NOT NULL;
-CREATE INDEX idx_products_deleted_at ON public.products(deleted_at) WHERE deleted_at IS NOT NULL;
-CREATE INDEX idx_tickets_deleted_at ON public.tickets(deleted_at) WHERE deleted_at IS NOT NULL;
-CREATE INDEX idx_orders_deleted_at ON public.orders(deleted_at) WHERE deleted_at IS NOT NULL;
-CREATE INDEX idx_order_items_deleted_at ON public.order_items(deleted_at) WHERE deleted_at IS NOT NULL;
-CREATE INDEX idx_customers_deleted_at ON public.customers(deleted_at) WHERE deleted_at IS NOT NULL;
-CREATE INDEX idx_second_hand_products_deleted_at ON public.second_hand_products(deleted_at) WHERE deleted_at IS NOT NULL;
+-- Drop existing archive tables
+DROP TABLE IF EXISTS public.profiles_archive;
+DROP TABLE IF EXISTS public.products_archive;
+DROP TABLE IF EXISTS public.tickets_archive;
+DROP TABLE IF EXISTS public.orders_archive;
+DROP TABLE IF EXISTS public.order_items_archive;
+DROP TABLE IF EXISTS public.customers_archive;
+DROP TABLE IF EXISTS public.second_hand_products_archive;
 
--- Create archive tables for long-term data retention
+-- Recreate archive tables with correct structure
 CREATE TABLE public.profiles_archive (
   id UUID,
   email TEXT,
@@ -119,16 +119,7 @@ CREATE TABLE public.second_hand_products_archive (
   archived_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Create indexes for archive tables
-CREATE INDEX idx_profiles_archive_deleted_at ON public.profiles_archive(deleted_at);
-CREATE INDEX idx_products_archive_deleted_at ON public.products_archive(deleted_at);
-CREATE INDEX idx_tickets_archive_deleted_at ON public.tickets_archive(deleted_at);
-CREATE INDEX idx_orders_archive_deleted_at ON public.orders_archive(deleted_at);
-CREATE INDEX idx_order_items_archive_deleted_at ON public.order_items_archive(deleted_at);
-CREATE INDEX idx_customers_archive_deleted_at ON public.customers_archive(deleted_at);
-CREATE INDEX idx_second_hand_products_archive_deleted_at ON public.second_hand_products_archive(deleted_at);
-
--- Create function to archive deleted records
+-- Recreate the archive function with proper column mapping
 CREATE OR REPLACE FUNCTION public.archive_deleted_record()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -160,75 +151,47 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create triggers for archiving deleted records
-DROP TRIGGER IF EXISTS archive_deleted_profiles ON public.profiles;
+-- Recreate triggers for archiving deleted records
 CREATE TRIGGER archive_deleted_profiles
 BEFORE DELETE ON public.profiles
 FOR EACH ROW
 EXECUTE FUNCTION public.archive_deleted_record();
 
-DROP TRIGGER IF EXISTS archive_deleted_products ON public.products;
 CREATE TRIGGER archive_deleted_products
 BEFORE DELETE ON public.products
 FOR EACH ROW
 EXECUTE FUNCTION public.archive_deleted_record();
 
-DROP TRIGGER IF EXISTS archive_deleted_tickets ON public.tickets;
 CREATE TRIGGER archive_deleted_tickets
 BEFORE DELETE ON public.tickets
 FOR EACH ROW
 EXECUTE FUNCTION public.archive_deleted_record();
 
-DROP TRIGGER IF EXISTS archive_deleted_orders ON public.orders;
 CREATE TRIGGER archive_deleted_orders
 BEFORE DELETE ON public.orders
 FOR EACH ROW
 EXECUTE FUNCTION public.archive_deleted_record();
 
-DROP TRIGGER IF EXISTS archive_deleted_order_items ON public.order_items;
 CREATE TRIGGER archive_deleted_order_items
 BEFORE DELETE ON public.order_items
 FOR EACH ROW
 EXECUTE FUNCTION public.archive_deleted_record();
 
-DROP TRIGGER IF EXISTS archive_deleted_customers ON public.customers;
 CREATE TRIGGER archive_deleted_customers
 BEFORE DELETE ON public.customers
 FOR EACH ROW
 EXECUTE FUNCTION public.archive_deleted_record();
 
-DROP TRIGGER IF EXISTS archive_deleted_second_hand_products ON public.second_hand_products;
 CREATE TRIGGER archive_deleted_second_hand_products
 BEFORE DELETE ON public.second_hand_products
 FOR EACH ROW
 EXECUTE FUNCTION public.archive_deleted_record();
 
--- Update RLS policies to exclude soft deleted records
-DROP POLICY IF EXISTS "Users can view own tickets" ON public.tickets;
-CREATE POLICY "Users can view own tickets" ON public.tickets
-FOR SELECT USING (user_id = auth.uid() AND deleted_at IS NULL OR EXISTS (
-  SELECT 1 FROM public.profiles p 
-  WHERE p.id = auth.uid() AND p.role = 'admin' AND p.deleted_at IS NULL
-));
-
-DROP POLICY IF EXISTS "Users can view own orders" ON public.orders;
-CREATE POLICY "Users can view own orders" ON public.orders
-FOR SELECT USING (user_id = auth.uid() AND deleted_at IS NULL OR EXISTS (
-  SELECT 1 FROM public.profiles p 
-  WHERE p.id = auth.uid() AND p.role = 'admin' AND p.deleted_at IS NULL
-));
-
-DROP POLICY IF EXISTS "Users can view own customer record" ON public.customers;
-CREATE POLICY "Users can view own customer record" ON public.customers
-FOR SELECT USING (user_id = auth.uid() AND deleted_at IS NULL OR EXISTS (
-  SELECT 1 FROM public.profiles p 
-  WHERE p.id = auth.uid() AND p.role = 'admin' AND p.deleted_at IS NULL
-));
-
-DROP POLICY IF EXISTS "Public can view products" ON public.products;
-CREATE POLICY "Public can view products" ON public.products
-FOR SELECT USING (deleted_at IS NULL);
-
-DROP POLICY IF EXISTS "Users can view second hand products" ON public.second_hand_products;
-CREATE POLICY "Users can view second hand products" ON public.second_hand_products
-FOR SELECT USING (deleted_at IS NULL);
+-- Recreate indexes for archive tables
+CREATE INDEX idx_profiles_archive_deleted_at ON public.profiles_archive(deleted_at);
+CREATE INDEX idx_products_archive_deleted_at ON public.products_archive(deleted_at);
+CREATE INDEX idx_tickets_archive_deleted_at ON public.tickets_archive(deleted_at);
+CREATE INDEX idx_orders_archive_deleted_at ON public.orders_archive(deleted_at);
+CREATE INDEX idx_order_items_archive_deleted_at ON public.order_items_archive(deleted_at);
+CREATE INDEX idx_customers_archive_deleted_at ON public.customers_archive(deleted_at);
+CREATE INDEX idx_second_hand_products_archive_deleted_at ON public.second_hand_products_archive(deleted_at);
