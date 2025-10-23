@@ -351,40 +351,90 @@ function HomePageContent() {
                 </div>
                 <Button 
                   type="submit"
-                  className="group relative px-10 py-5 bg-gradient-to-r from-blue-600/90 via-blue-500/90 to-cyan-500/90 backdrop-blur-sm rounded-2xl text-lg font-bold overflow-hidden shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-500 hover:scale-105 border border-blue-400/20"
+                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                   disabled={!ticketNumber.trim()}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <span className="relative flex items-center space-x-2">
-                    <span>Track Repair</span>
-                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </span>
+                  Track Repair
+                  <ChevronRight className="ml-2 h-5 w-5" />
                 </Button>
               </div>
             </form>
           </div>
-
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-5 pt-8 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-            <Button asChild className="group relative px-10 py-5 bg-gradient-to-r from-blue-600/90 via-blue-500/90 to-cyan-500/90 backdrop-blur-sm rounded-2xl text-lg font-bold overflow-hidden shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-500 hover:scale-105 border border-blue-400/20">
-              <Link href="/shop" className="flex items-center gap-2">
-                <span>Shop Accessories</span>
-                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </Button>
-            <Button asChild className="px-10 py-5 bg-white/3 backdrop-blur-xl rounded-2xl text-lg font-semibold border-2 border-blue-400/20 hover:bg-white/5 hover:border-blue-400/40 transition-all hover:scale-105 duration-300">
-              <Link href="/marketplace" className="flex items-center gap-2">
-                Secondhand Products
-                <ChevronRight className="w-5 h-5 ml-2" />
-              </Link>
-            </Button>
-          </div>
         </div>
+      </section>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 border-2 border-slate-600 rounded-full flex items-start justify-center p-2">
-            <div className="w-1.5 h-3 bg-gradient-to-b from-blue-400 to-transparent rounded-full animate-scroll" />
+      {/* Featured Products Section - Moved to top */}
+      <section className="relative py-12 px-4 sm:px-6 bg-gradient-to-b from-slate-950/50 to-slate-900/50">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-500/5 backdrop-blur-xl rounded-full border border-blue-400/20 animate-slide-down mb-4">
+              <Sparkles className="w-4 h-4 text-blue-400 animate-spin-slow" />
+              <span className="text-sm font-medium">Premium Upgrades</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black mb-4 bg-gradient-to-r from-purple-400 via-pink-300 to-purple-500 bg-clip-text text-transparent">
+              Device Enhancements
+            </h2>
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+              Upgrade your hardware with our curated selection of high-performance accessories
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {isLoading ? (
+              <div className="col-span-3 text-center py-8">
+                <p className="text-gray-400">Loading products...</p>
+              </div>
+            ) : featuredProducts.length > 0 ? (
+              featuredProducts.map((product, index) => (
+                <div
+                  key={product.id}
+                  id={`product-${index}`}
+                  data-animate
+                  className={`group relative rounded-2xl transition-all duration-500 hover:scale-105 animate-fade-in-up ${
+                    isVisible(`product-${index}`) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+                  }`}
+                  style={{ transitionDelay: `${index * 0.1}s` } as React.CSSProperties}
+                >
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500" />
+                  <Card className="relative bg-gradient-to-br from-white/3 to-white/5 backdrop-blur-xl border border-white/5 rounded-2xl overflow-hidden h-full group-hover:border-purple-400/30 transition-all">
+                    <CardHeader className="p-0">
+                      <div className="aspect-square overflow-hidden bg-slate-900 rounded-t-2xl">
+                        <Image
+                          src={product.imageUrl}
+                          alt={product.name}
+                          width={400}
+                          height={400}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          priority={index < 3}
+                        />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-5">
+                      <h3 className="text-lg font-bold mb-2 line-clamp-2">{product.name}</h3>
+                      <p className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-3">
+                        Ksh {product.price.toFixed(2)}
+                      </p>
+                      <Button asChild className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg text-sm">
+                        <Link href={`/product/${product.slug}`}>View Enhancement</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-8">
+                <p className="text-gray-400">No featured products available</p>
+              </div>
+            )}
+          </div>
+
+          <div className="text-center mt-8">
+            <Button asChild size="sm" className="group relative px-6 py-3 bg-gradient-to-r from-blue-600/90 via-blue-500/90 to-cyan-500/90 backdrop-blur-sm rounded-xl text-base font-bold overflow-hidden shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-500 hover:scale-105 border border-blue-400/20">
+              <Link href="/shop" className="flex items-center gap-2">
+                <span>Browse All Products</span>
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -392,6 +442,15 @@ function HomePageContent() {
       {/* Stats Section */}
       <section className="relative py-20 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl sm:text-5xl font-black mb-4 bg-gradient-to-r from-cyan-400 via-blue-300 to-cyan-500 bg-clip-text text-transparent">
+              Trusted by Thousands of Customers
+            </h2>
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+              Industry-leading service with proven results and customer satisfaction
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {stats.map((stat, index) => (
               <div
@@ -458,82 +517,6 @@ function HomePageContent() {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Products Section */}
-      <section className="relative py-20 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-500/5 backdrop-blur-xl rounded-full border border-blue-400/20 animate-slide-down mb-4">
-              <Sparkles className="w-4 h-4 text-blue-400 animate-spin-slow" />
-              <span className="text-sm font-medium">Premium Upgrades</span>
-            </div>
-            <h2 className="text-4xl sm:text-5xl font-black mb-4 bg-gradient-to-r from-purple-400 via-pink-300 to-purple-500 bg-clip-text text-transparent">
-              Device Enhancements
-            </h2>
-            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-              Upgrade your hardware with our curated selection of high-performance accessories
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {isLoading ? (
-              <div className="col-span-3 text-center py-12">
-                <p className="text-gray-400">Loading products...</p>
-              </div>
-            ) : featuredProducts.length > 0 ? (
-              featuredProducts.map((product, index) => (
-                <div
-                  key={product.id}
-                  id={`product-${index}`}
-                  data-animate
-                  className={`group relative rounded-3xl transition-all duration-500 hover:scale-105 animate-fade-in-up ${
-                    isVisible(`product-${index}`) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-                  }`}
-                  style={{ transitionDelay: `${index * 0.1}s` } as React.CSSProperties}
-                >
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500" />
-                  <Card className="relative bg-gradient-to-br from-white/3 to-white/5 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden h-full group-hover:border-purple-400/30 transition-all">
-                    <CardHeader className="p-0">
-                      <div className="aspect-square overflow-hidden bg-slate-900 rounded-t-3xl">
-                        <Image
-                          src={product.imageUrl}
-                          alt={product.name}
-                          width={400}
-                          height={400}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          priority={index < 3}
-                        />
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-bold mb-2 line-clamp-2">{product.name}</h3>
-                      <p className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">
-                        Ksh {product.price.toFixed(2)}
-                      </p>
-                      <Button asChild className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl">
-                        <Link href={`/product/${product.slug}`}>View Enhancement</Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-3 text-center py-12">
-                <p className="text-gray-400">No featured products available</p>
-              </div>
-            )}
-          </div>
-
-          <div className="text-center mt-12">
-            <Button asChild size="lg" className="group relative px-10 py-5 bg-gradient-to-r from-blue-600/90 via-blue-500/90 to-cyan-500/90 backdrop-blur-sm rounded-2xl text-lg font-bold overflow-hidden shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-500 hover:scale-105 border border-blue-400/20">
-              <Link href="/shop" className="flex items-center gap-2">
-                <span>Browse All Products</span>
-                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </Button>
           </div>
         </div>
       </section>
