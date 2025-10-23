@@ -433,13 +433,11 @@ export default function ProductsPage() {
                 {products.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell className="hidden sm:table-cell p-2">
-                      <Image
-                        alt={product.name}
-                        className="aspect-square rounded-md object-cover"
-                        height="64"
+                      <ProductImage
                         src={product.imageUrl}
-                        width="64"
-                        data-ai-hint={product.imageHint}
+                        alt={product.name}
+                        width={64}
+                        height={64}
                       />
                     </TableCell>
                     <TableCell className="font-medium">{product.name}</TableCell>
@@ -557,13 +555,11 @@ export default function ProductsPage() {
                   {secondHandProducts.map((product: any) => (
                     <TableRow key={product.id}>
                       <TableCell className="hidden sm:table-cell p-2">
-                        <Image
-                          alt={product.name}
-                          className="aspect-square rounded-md object-cover"
-                          height="64"
+                        <ProductImage
                           src={product.image_url || product.imageUrl || "/placeholder.svg"}
-                          width="64"
-                          data-ai-hint={product.imageHint || "Second-hand product"}
+                          alt={product.name}
+                          width={64}
+                          height={64}
                         />
                       </TableCell>
                       <TableCell className="font-medium">{product.name}</TableCell>
@@ -782,13 +778,17 @@ function AddNewProductForm() {
       });
 
       if (!uploadResponse.ok) {
-        throw new Error('Failed to upload image');
+        throw new Error(`Failed to upload image: ${uploadResponse.status} ${uploadResponse.statusText}`);
       }
 
-      // Return the public URL
-      return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/products/${fileName}`;
+      // Instead of immediately verifying, we'll trust the successful upload
+      // and generate the public URL directly
+      // The public URL format is predictable for Supabase storage
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321';
+      return `${supabaseUrl}/storage/v1/object/public/products/${fileName}`;
     } catch (err) {
       console.error('Error uploading image:', err);
+      setError(err instanceof Error ? err.message : 'Failed to upload image');
       return null;
     } finally {
       setUploading(false);
@@ -811,7 +811,11 @@ function AddNewProductForm() {
       
       // Upload image if provided
       if (imageFile && name) {
-        imageUrl = (await uploadImage(imageFile, name)) || imageUrl;
+        const uploadedImageUrl = await uploadImage(imageFile, name);
+        if (!uploadedImageUrl) {
+          throw new Error('Image upload failed');
+        }
+        imageUrl = uploadedImageUrl;
       }
 
       // Prepare data according to schema
@@ -1123,13 +1127,17 @@ function AddSecondHandItemForm() {
       });
 
       if (!uploadResponse.ok) {
-        throw new Error('Failed to upload image');
+        throw new Error(`Failed to upload image: ${uploadResponse.status} ${uploadResponse.statusText}`);
       }
 
-      // Return the public URL
-      return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/products/${fileName}`;
+      // Instead of immediately verifying, we'll trust the successful upload
+      // and generate the public URL directly
+      // The public URL format is predictable for Supabase storage
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321';
+      return `${supabaseUrl}/storage/v1/object/public/products/${fileName}`;
     } catch (err) {
       console.error('Error uploading image:', err);
+      setError(err instanceof Error ? err.message : 'Failed to upload image');
       return null;
     } finally {
       setUploading(false);
@@ -1152,7 +1160,11 @@ function AddSecondHandItemForm() {
       
       // Upload image if provided
       if (imageFile && name) {
-        imageUrl = (await uploadImage(imageFile, name)) || imageUrl;
+        const uploadedImageUrl = await uploadImage(imageFile, name);
+        if (!uploadedImageUrl) {
+          throw new Error('Image upload failed');
+        }
+        imageUrl = uploadedImageUrl;
       }
 
       // First, create a regular product
@@ -1363,5 +1375,62 @@ function AddSecondHandItemForm() {
         </Button>
       </div>
     </form>
+  );
+}
+
+function ProductImage({ src, alt, width, height }: { src: string; alt: string; width: number; height: number }) {
+  const [imgSrc, setImgSrc] = useState(src);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setImgSrc(src);
+    setIsLoading(true);
+    setHasError(false);
+  }, [src]);
+
+  const handleError = () => {
+    if (!hasError) {
+      setIsLoading(false);
+      setHasError(true);
+      // Fallback to placeholder image (PNG format)
+      setImgSrc('https://placehold.co/400x400/png?text=No+Image&font=roboto');
+    }
+  };
+
+  const handleLoad = () => {
+    setIsLoading(false);
+  };
+
+  // If we have an error, show a simple fallback
+  if (hasError) {
+    return (
+      <div className="flex items-center justify-center w-full h-full bg-gray-100 rounded-md">
+        <div className="text-center">
+          <div className="text-gray-400">Image not found</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative aspect-square overflow-hidden bg-muted rounded-md">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
+      )}
+      <Image
+        src={imgSrc}
+        alt={alt}
+        width={width}
+        height={height}
+        onError={handleError}
+        onLoad={handleLoad}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${
+          isLoading ? 'opacity-0' : 'opacity-100'
+        }`}
+      />
+    </div>
   );
 }

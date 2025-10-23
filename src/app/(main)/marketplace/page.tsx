@@ -33,6 +33,53 @@ const SORT_OPTIONS = {
 
 type SortOption = typeof SORT_OPTIONS[keyof typeof SORT_OPTIONS];
 
+// Product image component with fallback handling
+function ProductImage({ src, alt }: { src: string; alt: string }) {
+  const [imgSrc, setImgSrc] = useState(src);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setImgSrc(src);
+    setIsLoading(true);
+    setHasError(false);
+  }, [src]);
+
+  const handleError = () => {
+    if (!hasError) {
+      setIsLoading(false);
+      setHasError(true);
+      // Fallback to placeholder image (PNG format)
+      setImgSrc('https://placehold.co/400x400/png?text=No+Image&font=roboto');
+    }
+  };
+
+  const handleLoad = () => {
+    setIsLoading(false);
+  };
+
+  return (
+    <div className="relative aspect-square overflow-hidden bg-muted">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      )}
+      <Image
+        src={imgSrc}
+        alt={alt}
+        width={400}
+        height={400}
+        onError={handleError}
+        onLoad={handleLoad}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${
+          isLoading ? 'opacity-0' : 'opacity-100'
+        }`}
+      />
+    </div>
+  );
+}
+
 export default function MarketplacePage() {
   const [items, setItems] = useState<SecondHandProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -290,16 +337,10 @@ export default function MarketplacePage() {
                         {product.condition}
                       </span>
                     </div>
-                    <div className="aspect-square overflow-hidden bg-muted">
-                      <Image
-                        src={product.imageUrl}
-                        alt={product.name}
-                        width={400}
-                        height={400}
-                        data-ai-hint={product.imageHint}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-in-out"
-                      />
-                    </div>
+                    <ProductImage 
+                      src={product.imageUrl} 
+                      alt={product.name} 
+                    />
                   </CardHeader>
                   <CardContent className="p-5 flex flex-col flex-1">
                     <p className="text-sm text-muted-foreground mb-1">{product.category}</p>

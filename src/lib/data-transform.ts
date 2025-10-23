@@ -1,6 +1,7 @@
 // Utility functions for consistent data transformation between API and client components
 
 import type { RepairTicket, Product } from '@/lib/types';
+import { generateProductImageUrl, getFallbackImageUrl } from '@/lib/image-utils';
 
 // Transform ticket data from API format to client format
 export function transformTicketData(apiTicket: any): RepairTicket {
@@ -25,6 +26,19 @@ export function transformTicketData(apiTicket: any): RepairTicket {
 
 // Transform product data from API format to client format
 export function transformProductData(apiProduct: any): Product {
+  // Generate a valid image URL or use fallback
+  let imageUrl = getFallbackImageUrl();
+  
+  if (apiProduct.image_url) {
+    // If it's already a full URL, use it
+    if (apiProduct.image_url.startsWith('http')) {
+      imageUrl = apiProduct.image_url;
+    } else {
+      // Otherwise, generate the full URL from the filename
+      imageUrl = generateProductImageUrl(apiProduct.image_url);
+    }
+  }
+  
   return {
     id: apiProduct.id,
     name: apiProduct.name,
@@ -33,7 +47,7 @@ export function transformProductData(apiProduct: any): Product {
     description: apiProduct.description,
     price: Number(apiProduct.price),
     stockQuantity: apiProduct.stock_quantity ?? apiProduct.stock ?? 0,
-    imageUrl: apiProduct.image_url,
+    imageUrl: imageUrl,
     imageHint: 'product image',
     isFeatured: apiProduct.is_featured ?? false,
   };
