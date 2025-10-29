@@ -18,6 +18,9 @@ const Dashboard = () => {
   const [ticketSummary, setTicketSummary] = useState<TicketSummary[]>([]);
   const [productSalesSummary, setProductSalesSummary] = useState<ProductSalesSummary[]>([]);
   const [ticketTrends, setTicketTrends] = useState<Ticket[]>([]);
+  const [revenueTrends, setRevenueTrends] = useState<any[]>([]);
+  const [ticketStatusDistribution, setTicketStatusDistribution] = useState<any[]>([]);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +48,18 @@ const Dashboard = () => {
       const recentTickets = await ticketsDb.getAll();
       setTicketTrends(recentTickets || []);
       
+      // Fetch revenue trends
+      const revenueTrendsData = await dashboardDb.getMonthlyRevenueTrends();
+      setRevenueTrends(revenueTrendsData || []);
+      
+      // Fetch ticket status distribution
+      const ticketStatusData = await dashboardDb.getTicketStatusDistribution();
+      setTicketStatusDistribution(ticketStatusData || []);
+      
+      // Fetch top products
+      const topProductsData = await dashboardDb.getTopProductsBySales();
+      setTopProducts(topProductsData || []);
+      
       setError(null);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
@@ -55,35 +70,29 @@ const Dashboard = () => {
   };
 
   // Prepare data for charts
-  const revenueData = [
-    { month: "Jan", repairs: 1612000, products: 1157000, total: 2769000 },
-    { month: "Feb", repairs: 1976000, products: 1274000, total: 3250000 },
-    { month: "Mar", repairs: 1534000, products: 1326000, total: 2860000 },
-    { month: "Apr", repairs: 2457000, products: 1573000, total: 4030000 },
-    { month: "May", repairs: 2171000, products: 1534000, total: 3705000 },
-    { month: "Jun", repairs: 2769000, products: 1846000, total: 4615000 },
-  ];
+  const revenueData = revenueTrends.map(trend => ({
+    month: new Date(trend.month).toLocaleString('default', { month: 'short' }),
+    repairs: trend.total_revenue || 0,
+    products: 0, // We don't have product revenue in the materialized view
+    total: trend.total_revenue || 0
+  }));
 
-  const ticketStatusData = adminMetrics ? [
-    { name: "Received", value: adminMetrics.tickets_received || 0, fill: "hsl(var(--status-received))" },
-    { name: "Diagnosing", value: adminMetrics.tickets_diagnosing || 0, fill: "hsl(var(--status-diagnosing))" },
-    { name: "Repairing", value: adminMetrics.tickets_repairing || 0, fill: "hsl(var(--status-repairing))" },
-    { name: "Ready", value: adminMetrics.tickets_ready || 0, fill: "hsl(var(--status-ready))" },
-    { name: "Completed", value: adminMetrics.tickets_completed || 0, fill: "hsl(var(--status-completed))" },
-  ] : [];
+  const ticketStatusData = ticketStatusDistribution.map(status => ({
+    name: status.status.charAt(0).toUpperCase() + status.status.slice(1),
+    value: status.count,
+    fill: `hsl(var(--status-${status.status}))`
+  }));
 
-  const topProductsData = productSalesSummary.slice(0, 5).map(product => ({
+  const topProductsData = topProducts.map(product => ({
     product: product.name || "Unknown",
     sales: product.total_quantity_sold || 0
   }));
 
   // Group tickets by week for trends
-  const ticketTrendsData = [
-    { week: "Week 1", tickets: 18 },
-    { week: "Week 2", tickets: 24 },
-    { week: "Week 3", tickets: 19 },
-    { week: "Week 4", tickets: 31 },
-  ];
+  const ticketTrendsData = revenueTrends.map(trend => ({
+    week: new Date(trend.month).toLocaleString('default', { month: 'short' }),
+    tickets: trend.ticket_count || 0
+  }));
 
   if (loading) {
     return (
@@ -353,7 +362,7 @@ const Dashboard = () => {
                   <div>
                     <p className="font-semibold">{ticket.ticket_number}</p>
                     <p className="text-sm text-muted-foreground">
-                      {ticket.device_brand} {ticket.device_model} - {ticket.issue_description?.substring(0, 30)}...
+                      {ticket.device_brand} {ticket.device_model}
                     </p>
                   </div>
                   <div className="text-right">

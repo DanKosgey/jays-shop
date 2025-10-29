@@ -64,5 +64,44 @@ export const dashboardDb = {
     
     if (error) throw error
     return data
+  },
+
+  // Get monthly revenue trends
+  async getMonthlyRevenueTrends() {
+    const supabase = createClientComponentClient()
+    // Using type assertion to bypass TypeScript error for materialized views
+    const { data, error } = await (supabase as any)
+      .from('monthly_ticket_trends')
+      .select('*')
+      .order('month', { ascending: true })
+    
+    if (error) throw error
+    return data
+  },
+
+  // Get ticket status distribution
+  async getTicketStatusDistribution() {
+    const supabase = createClientComponentClient()
+    // Using type assertion to bypass TypeScript error for materialized views
+    const { data, error } = await (supabase as any)
+      .from('ticket_status_distribution')
+      .select('*')
+    
+    if (error) throw error
+    return data
+  },
+
+  // Get top products by sales
+  async getTopProductsBySales() {
+    const supabase = createClientComponentClient()
+    // Using type assertion to bypass TypeScript error for materialized views
+    const { data, error } = await (supabase as any)
+      .from('top_products_by_sales')
+      .select('*')
+      .order('total_revenue', { ascending: false })
+      .limit(10)
+    
+    if (error) throw error
+    return data
   }
 }

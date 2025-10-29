@@ -119,11 +119,10 @@ export const productsDb = {
   // Delete product (soft delete)
   async delete(id: string) {
     const supabase = createClientComponentClient()
-    // For now, we'll do a hard delete since we can't easily update deleted_at
-    // In a production environment, you would implement proper soft delete
+    // Using type assertion to bypass TypeScript error for deleted_at field
     const { error } = await supabase
       .from('products')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() } as any)
       .eq('id', id)
     
     if (error) throw error

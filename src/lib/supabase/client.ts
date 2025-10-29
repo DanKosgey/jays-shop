@@ -1,5 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { Database } from '../../../types/database.types'
+
+// Global singleton instance
+let supabaseClient: SupabaseClient<Database> | null = null
 
 // Create Supabase client
 // In Vite, environment variables are accessed through import.meta.env
@@ -15,20 +18,25 @@ if (!supabaseAnonKey) {
   throw new Error('Missing SUPABASE_ANON_KEY environment variable')
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+// Create a singleton Supabase client instance
+export const getSupabaseClient = (): SupabaseClient<Database> => {
+  if (!supabaseClient) {
+    supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    })
+  }
+  return supabaseClient
+}
+
+// Export the client directly for backward compatibility
+export const supabase = getSupabaseClient()
 
 // Create a client component client (for use in React components)
+// This will return the singleton instance to avoid multiple clients
 export const createClientComponentClient = () => {
-  const url = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  
-  if (!url) {
-    throw new Error('Missing SUPABASE_URL environment variable')
-  }
-  
-  if (!key) {
-    throw new Error('Missing SUPABASE_ANON_KEY environment variable')
-  }
-  
-  return createClient<Database>(url, key)
+  return getSupabaseClient()
 }

@@ -1,8 +1,7 @@
 import { createClientComponentClient } from '@/lib/supabase/client'
-import { Database } from '../../../types/database.types'
 
-// Since the second_hand_products table is not in the generated types, we'll define the types here
-type SecondHandProduct = {
+// Define types based on the second_hand_products table schema
+export type SecondHandProduct = {
   id: string
   product_id: string
   seller_id: string
@@ -15,14 +14,10 @@ type SecondHandProduct = {
   is_available: boolean
   created_at: string
   updated_at: string
-  // We'll also include product information for display
-  products?: {
-    name: string
-    image_url: string
-  } | null
+  deleted_at: string | null
 }
 
-type SecondHandProductInsert = {
+export type SecondHandProductInsert = {
   product_id: string
   seller_id: string
   condition: 'Like New' | 'Good' | 'Fair'
@@ -34,35 +29,32 @@ type SecondHandProductInsert = {
   is_available?: boolean
 }
 
-type SecondHandProductUpdate = Partial<SecondHandProductInsert>
+export type SecondHandProductUpdate = Partial<SecondHandProductInsert>
 
 export const secondHandProductsDb = {
-  // Get all available second-hand products with product details
+  // Get all available second-hand products
   async getAll() {
     const supabase = createClientComponentClient()
-    const { data, error } = await supabase
+    // Using type assertion to bypass TypeScript error for second_hand_products table
+    const { data, error } = await (supabase as any)
       .from('second_hand_products')
-      .select(`
-        *,
-        products(name, image_url)
-      `)
-      .eq('is_available', true)
+      .select('*')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
     
     if (error) throw error
     return data as SecondHandProduct[]
   },
 
-  // Get second-hand product by ID with product details
+  // Get second-hand product by ID
   async getById(id: string) {
     const supabase = createClientComponentClient()
-    const { data, error } = await supabase
+    // Using type assertion to bypass TypeScript error for second_hand_products table
+    const { data, error } = await (supabase as any)
       .from('second_hand_products')
-      .select(`
-        *,
-        products(name, image_url)
-      `)
+      .select('*')
       .eq('id', id)
+      .is('deleted_at', null)
       .single()
     
     if (error) throw error
@@ -72,14 +64,12 @@ export const secondHandProductsDb = {
   // Get second-hand products by condition
   async getByCondition(condition: 'Like New' | 'Good' | 'Fair') {
     const supabase = createClientComponentClient()
-    const { data, error } = await supabase
+    // Using type assertion to bypass TypeScript error for second_hand_products table
+    const { data, error } = await (supabase as any)
       .from('second_hand_products')
-      .select(`
-        *,
-        products(name, image_url)
-      `)
+      .select('*')
       .eq('condition', condition)
-      .eq('is_available', true)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
     
     if (error) throw error
@@ -89,14 +79,12 @@ export const secondHandProductsDb = {
   // Search second-hand products by product name or description
   async search(searchTerm: string) {
     const supabase = createClientComponentClient()
-    const { data, error } = await supabase
+    // Using type assertion to bypass TypeScript error for second_hand_products table
+    const { data, error } = await (supabase as any)
       .from('second_hand_products')
-      .select(`
-        *,
-        products(name, image_url)
-      `)
-      .eq('is_available', true)
-      .or(`products.name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
+      .select('*')
+      .or(`seller_name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
     
     if (error) throw error
@@ -106,13 +94,12 @@ export const secondHandProductsDb = {
   // Get second-hand products by seller
   async getBySeller(sellerId: string) {
     const supabase = createClientComponentClient()
-    const { data, error } = await supabase
+    // Using type assertion to bypass TypeScript error for second_hand_products table
+    const { data, error } = await (supabase as any)
       .from('second_hand_products')
-      .select(`
-        *,
-        products(name, image_url)
-      `)
+      .select('*')
       .eq('seller_id', sellerId)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
     
     if (error) throw error
@@ -122,13 +109,11 @@ export const secondHandProductsDb = {
   // Create new second-hand product listing
   async create(product: SecondHandProductInsert) {
     const supabase = createClientComponentClient()
-    const { data, error } = await supabase
+    // Using type assertion to bypass TypeScript error for second_hand_products table
+    const { data, error } = await (supabase as any)
       .from('second_hand_products')
       .insert(product)
-      .select(`
-        *,
-        products(name, image_url)
-      `)
+      .select()
       .single()
     
     if (error) throw error
@@ -138,31 +123,27 @@ export const secondHandProductsDb = {
   // Update second-hand product listing
   async update(id: string, updates: SecondHandProductUpdate) {
     const supabase = createClientComponentClient()
-    const { data, error } = await supabase
+    // Using type assertion to bypass TypeScript error for second_hand_products table
+    const { data, error } = await (supabase as any)
       .from('second_hand_products')
       .update(updates)
       .eq('id', id)
-      .select(`
-        *,
-        products(name, image_url)
-      `)
+      .select()
       .single()
     
     if (error) throw error
     return data as SecondHandProduct
   },
 
-  // Delete second-hand product listing (soft delete by marking as unavailable)
+  // Delete second-hand product listing (soft delete)
   async delete(id: string) {
     const supabase = createClientComponentClient()
-    const { data, error } = await supabase
+    // Using type assertion to bypass TypeScript error for second_hand_products table
+    const { error } = await (supabase as any)
       .from('second_hand_products')
-      .update({ is_available: false })
+      .update({ deleted_at: new Date().toISOString() } as any)
       .eq('id', id)
-      .select()
-      .single()
     
     if (error) throw error
-    return data
   }
 }

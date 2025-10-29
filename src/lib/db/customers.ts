@@ -12,6 +12,7 @@ export const customersDb = {
     const { data, error } = await supabase
       .from('customers')
       .select('*')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
     
     if (error) throw error
@@ -25,6 +26,7 @@ export const customersDb = {
       .from('customers')
       .select('*')
       .eq('id', id)
+      .is('deleted_at', null)
       .single()
     
     if (error) throw error
@@ -38,6 +40,7 @@ export const customersDb = {
       .from('customers')
       .select('*')
       .eq('email', email)
+      .is('deleted_at', null)
       .single()
     
     if (error) throw error
@@ -51,6 +54,7 @@ export const customersDb = {
       .from('customers')
       .select('*')
       .eq('user_id', userId)
+      .is('deleted_at', null)
       .single()
     
     if (error) throw error
@@ -84,12 +88,13 @@ export const customersDb = {
     return data
   },
 
-  // Delete customer
+  // Delete customer (soft delete)
   async delete(id: string) {
     const supabase = createClientComponentClient()
+    // Using type assertion to bypass TypeScript error for deleted_at field
     const { error } = await supabase
       .from('customers')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() } as any)
       .eq('id', id)
     
     if (error) throw error
@@ -102,6 +107,7 @@ export const customersDb = {
       .from('customers')
       .select('*')
       .or(`name.ilike.%${query}%,email.ilike.%${query}%,phone.ilike.%${query}%`)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
     
     if (error) throw error

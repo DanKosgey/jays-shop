@@ -16,6 +16,7 @@ export const ordersDb = {
         *,
         order_items(*, products(name))
       `)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
     
     if (error) throw error
@@ -32,6 +33,7 @@ export const ordersDb = {
         order_items(*, products(name))
       `)
       .eq('id', id)
+      .is('deleted_at', null)
       .single()
     
     if (error) throw error
@@ -48,6 +50,7 @@ export const ordersDb = {
         order_items(*, products(name))
       `)
       .eq('status', status)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
     
     if (error) throw error
@@ -64,6 +67,7 @@ export const ordersDb = {
         order_items(*, products(name))
       `)
       .eq('user_id', userId)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
     
     if (error) throw error
@@ -97,12 +101,13 @@ export const ordersDb = {
     return data
   },
 
-  // Delete order
+  // Delete order (soft delete)
   async delete(id: string) {
     const supabase = createClientComponentClient()
+    // Using type assertion to bypass TypeScript error for deleted_at field
     const { error } = await supabase
       .from('orders')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() } as any)
       .eq('id', id)
     
     if (error) throw error
