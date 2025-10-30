@@ -21,6 +21,13 @@ export default function TrackTicket() {
     e.preventDefault()
     if (!ticketNumber) return
 
+    // Basic validation for ticket number format
+    const ticketNumberRegex = /^TKT-\d{8}-\d{4}$/
+    if (!ticketNumberRegex.test(ticketNumber)) {
+      setError("Invalid ticket number format. Please use the format: TKT-YYYYMMDD-XXXX")
+      return
+    }
+
     setIsLoading(true)
     setError(null)
     
@@ -74,7 +81,7 @@ export default function TrackTicket() {
                   <Label htmlFor="ticketNumber">Ticket Number</Label>
                   <Input
                     id="ticketNumber"
-                    placeholder="e.g., TKT-2023-00123"
+                    placeholder="e.g., TKT-20251030-0001"
                     value={ticketNumber}
                     onChange={(e) => setTicketNumber(e.target.value)}
                     required

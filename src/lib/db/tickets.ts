@@ -55,7 +55,15 @@ export const ticketsDb = {
         .is('deleted_at', null)
         .single()
       
-      if (error) throw new Error(`Failed to fetch ticket: ${error.message}`)
+      // Handle the case where no ticket is found
+      if (error) {
+        // Check if it's a "no rows" error (which is expected when ticket doesn't exist)
+        if (error.code === 'PGRST116') {
+          return null; // No ticket found
+        }
+        throw new Error(`Failed to fetch ticket: ${error.message}`)
+      }
+      
       return data
     } catch (error) {
       console.error('Error in ticketsDb.getByTicketNumber:', error)
