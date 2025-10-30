@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -13,22 +13,64 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Search, Eye, Edit, Truck, CheckCircle } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { Database } from "../../../types/database.types"
+import { getSupabaseBrowserClient } from '@/server/supabase/client'
+
+type Order = Database['public']['Tables']['orders']['Row']
+type OrderStatus = Database['public']['Enums']['order_status']
 
 export default function AdminOrders() {
+  const [orders, setOrders] = useState<Order[]>([])
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast()
 
-  // Mock order data
-  const orders = [
-    { id: "ORD-2023-001", customer: "John Doe", items: 3, total: 35000, status: "Processing", date: "2023-06-15" },
-    { id: "ORD-2023-002", customer: "Jane Smith", items: 1, total: 25000, status: "Shipped", date: "2023-06-14" },
-    { id: "ORD-2023-003", customer: "Robert Johnson", items: 2, total: 18000, status: "Delivered", date: "2023-06-14" },
-    { id: "ORD-2023-004", customer: "Emily Davis", items: 5, total: 42000, status: "Processing", date: "2023-06-13" },
-    { id: "ORD-2023-005", customer: "Michael Wilson", items: 1, total: 8000, status: "Cancelled", date: "2023-06-12" },
-  ]
+  useEffect(() => {
+    fetchOrders()
+  }, [])
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'processing': return 'bg-blue-100 text-blue-800'
+  useEffect(() => {
+    if (searchTerm) {
+      const filtered = orders.filter(order => 
+        order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.order_number.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      setFilteredOrders(filtered)
+    } else {
+      setFilteredOrders(orders)
+    }
+  }, [searchTerm, orders])
+
+  const fetchOrders = async () => {
+    try {
+      setIsLoading(true)
+      const supabase = getSupabaseBrowserClient()
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+      
+      setOrders(data || [])
+      setFilteredOrders(data || [])
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch orders",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const getStatusColor = (status: OrderStatus) => {
+    switch (status) {
+      case 'pending': return 'bg-blue-100 text-blue-800'
       case 'shipped': return 'bg-yellow-100 text-yellow-800'
       case 'delivered': return 'bg-green-100 text-green-800'
       case 'cancelled': return 'bg-red-100 text-red-800'
@@ -36,10 +78,39 @@ export default function AdminOrders() {
     }
   }
 
-  const filteredOrders = orders.filter(order => 
-    order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.customer.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
+    try {
+      const supabase = getSupabaseBrowserClient()
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('id', orderId)
+      
+      if (error) throw error
+      
+      toast({
+        title: "Success",
+        description: "Order status updated successfully",
+      })
+      
+      // Refresh the orders list
+      fetchOrders()
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update order status",
+        variant: "destructive",
+      })
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -70,7 +141,6 @@ export default function AdminOrders() {
             <TableRow>
               <TableHead>Order ID</TableHead>
               <TableHead>Customer</TableHead>
-              <TableHead>Items</TableHead>
               <TableHead>Total</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Date</TableHead>
@@ -78,36 +148,50 @@ export default function AdminOrders() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredOrders.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell className="font-medium">{order.id}</TableCell>
-                <TableCell>{order.customer}</TableCell>
-                <TableCell>{order.items}</TableCell>
-                <TableCell>KSh {order.total.toLocaleString()}</TableCell>
-                <TableCell>
-                  <Badge className={getStatusColor(order.status)}>
-                    {order.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>{order.date}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      {order.status === "Shipped" ? 
-                        <CheckCircle className="h-4 w-4" /> : 
-                        <Truck className="h-4 w-4" />
-                      }
-                    </Button>
-                  </div>
+            {filteredOrders.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  No orders found
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              filteredOrders.map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell className="font-medium">{order.order_number}</TableCell>
+                  <TableCell>{order.customer_name}</TableCell>
+                  <TableCell>KSh {order.total_amount?.toLocaleString()}</TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor(order.status)}>
+                      {order.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="icon">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleUpdateStatus(
+                          order.id, 
+                          order.status === 'shipped' ? 'delivered' : 'shipped'
+                        )}
+                      >
+                        {order.status === "shipped" ? 
+                          <CheckCircle className="h-4 w-4" /> : 
+                          <Truck className="h-4 w-4" />
+                        }
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

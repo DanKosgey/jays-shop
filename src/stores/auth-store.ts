@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { getSupabaseBrowserClient } from '@/server/supabase/client';
 
 interface User {
   email: string;
@@ -10,38 +11,102 @@ interface User {
 interface AuthStore {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => boolean;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  initializeAuth: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isAuthenticated: false,
       
-      login: (email: string, password: string) => {
-        // Dummy authentication
-        if (email === "admin@repairhub.com" && password === "admin123") {
-          set({
-            user: { email, name: "Admin User", role: "admin" },
-            isAuthenticated: true,
+      login: async (email: string, password: string) => {
+        try {
+          const supabase = getSupabaseBrowserClient();
+          
+          // Sign in with Supabase
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
           });
-          return true;
-        } else if (email === "user@repairhub.com" && password === "user123") {
-          set({
-            user: { email, name: "John Doe", role: "user" },
-            isAuthenticated: true,
-          });
-          return true;
+          
+          if (error) {
+            console.error('Login error:', error);
+            return false;
+          }
+          
+          if (data.user) {
+            // Get user role from database
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('role')
+              .eq('id', data.user.id)
+              .single();
+            
+            const role = userData?.role === 'admin' ? 'admin' : 'user';
+            
+            set({
+              user: { 
+                email: data.user.email || '', 
+                name: data.user.user_metadata?.name || email,
+                role
+              },
+              isAuthenticated: true,
+            });
+            
+            return true;
+          }
+          
+          return false;
+        } catch (error) {
+          console.error('Login error:', error);
+          return false;
         }
-        return false;
       },
       
-      logout: () => set({ user: null, isAuthenticated: false }),
+      logout: async () => {
+        const supabase = getSupabaseBrowserClient();
+        await supabase.auth.signOut();
+        set({ user: null, isAuthenticated: false });
+      },
+      
+      initializeAuth: async () => {
+        try {
+          const supabase = getSupabaseBrowserClient();
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          if (session?.user) {
+            // Get user role from database
+            const { data: userData, error } = await supabase
+              .from('users')
+              .select('role')
+              .eq('id', session.user.id)
+              .single();
+            
+            const role = userData?.role === 'admin' ? 'admin' : 'user';
+            
+            set({
+              user: { 
+                email: session.user.email || '', 
+                name: session.user.user_metadata?.name || session.user.email || '',
+                role
+              },
+              isAuthenticated: true,
+            });
+          }
+        } catch (error) {
+          console.error('Auth initialization error:', error);
+        }
+      }
     }),
     {
       name: 'auth-storage',
+      partialize: (state) => ({ 
+        user: state.user, 
+        isAuthenticated: state.isAuthenticated 
+      }),
     }
   )
 );

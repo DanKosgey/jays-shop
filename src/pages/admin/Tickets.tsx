@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -16,20 +16,54 @@ import { Search, Plus, Eye, Edit, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { ticketsDb } from "@/lib/db/tickets"
+import { Database } from "../../../types/database.types"
+
+type Ticket = Database['public']['Tables']['tickets']['Row']
 
 export default function Tickets() {
+  const [tickets, setTickets] = useState<Ticket[]>([])
+  const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const { toast } = useToast()
 
-  // Mock ticket data
-  const tickets = [
-    { id: "TKT-2023-001", customer: "John Doe", device: "iPhone 13 Pro", issue: "Screen replacement", status: "In Progress", date: "2023-06-15" },
-    { id: "TKT-2023-002", customer: "Jane Smith", device: "Samsung Galaxy S21", issue: "Battery replacement", status: "Completed", date: "2023-06-14" },
-    { id: "TKT-2023-003", customer: "Robert Johnson", device: "Google Pixel 6", issue: "Camera repair", status: "Pending", date: "2023-06-14" },
-    { id: "TKT-2023-004", customer: "Emily Davis", device: "iPhone 12", issue: "Water damage", status: "In Progress", date: "2023-06-13" },
-    { id: "TKT-2023-005", customer: "Michael Wilson", device: "Samsung Galaxy Note 20", issue: "Speaker repair", status: "Completed", date: "2023-06-12" },
-  ]
+  useEffect(() => {
+    fetchTickets()
+  }, [])
+
+  useEffect(() => {
+    if (searchTerm) {
+      const filtered = tickets.filter(ticket => 
+        ticket.ticket_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.device_brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.device_model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.issue_description.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      setFilteredTickets(filtered)
+    } else {
+      setFilteredTickets(tickets)
+    }
+  }, [searchTerm, tickets])
+
+  const fetchTickets = async () => {
+    try {
+      setIsLoading(true)
+      const data = await ticketsDb.getAll()
+      setTickets(data)
+      setFilteredTickets(data)
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch tickets",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -40,35 +74,40 @@ export default function Tickets() {
     }
   }
 
-  const filteredTickets = tickets.filter(ticket => 
-    ticket.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ticket.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ticket.device.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ticket.issue.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
   const handleViewTicket = (ticketId: string) => {
-    // In a real app, this would navigate to a ticket details page
-    toast({
-      title: "View Ticket",
-      description: `Viewing details for ticket ${ticketId}`,
-    });
+    // Navigate to ticket details page
+    router.push(`/admin/tickets/${ticketId}`)
   }
 
   const handleEditTicket = (ticketId: string) => {
-    // In a real app, this would navigate to an edit page
-    toast({
-      title: "Edit Ticket",
-      description: `Editing ticket ${ticketId}`,
-    });
+    // Navigate to edit ticket page
+    router.push(`/admin/tickets/${ticketId}/edit`)
   }
 
-  const handleDeleteTicket = (ticketId: string) => {
-    // In a real app, this would show a confirmation dialog and then delete the ticket
-    toast({
-      title: "Delete Ticket",
-      description: `Ticket ${ticketId} has been deleted`,
-    });
+  const handleDeleteTicket = async (ticketId: string) => {
+    try {
+      await ticketsDb.delete(ticketId)
+      toast({
+        title: "Success",
+        description: "Ticket deleted successfully",
+      })
+      // Refresh the tickets list
+      fetchTickets()
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete ticket",
+        variant: "destructive",
+      })
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   return (
@@ -114,33 +153,41 @@ export default function Tickets() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredTickets.map((ticket) => (
-              <TableRow key={ticket.id}>
-                <TableCell className="font-medium">{ticket.id}</TableCell>
-                <TableCell>{ticket.customer}</TableCell>
-                <TableCell>{ticket.device}</TableCell>
-                <TableCell>{ticket.issue}</TableCell>
-                <TableCell>
-                  <Badge className={getStatusColor(ticket.status)}>
-                    {ticket.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>{ticket.date}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleViewTicket(ticket.id)}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleEditTicket(ticket.id)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDeleteTicket(ticket.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {filteredTickets.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  No tickets found
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              filteredTickets.map((ticket) => (
+                <TableRow key={ticket.id}>
+                  <TableCell className="font-medium">{ticket.ticket_number}</TableCell>
+                  <TableCell>{ticket.customer_name}</TableCell>
+                  <TableCell>{ticket.device_brand} {ticket.device_model}</TableCell>
+                  <TableCell>{ticket.issue_description}</TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor(ticket.status)}>
+                      {ticket.status.replace('_', ' ')}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="icon" onClick={() => handleViewTicket(ticket.id)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleEditTicket(ticket.id)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteTicket(ticket.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

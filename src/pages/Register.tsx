@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { getSupabaseBrowserClient } from '@/server/supabase/client'
 
 export default function Register() {
   const [name, setName] = useState('')
@@ -30,22 +31,61 @@ export default function Register() {
       return
     }
 
+    if (password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
 
     try {
-      // Simulate register API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const supabase = getSupabaseBrowserClient();
+      
+      // Register with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+          },
+        },
+      })
+      
+      if (error) {
+        throw new Error(error.message)
+      }
+      
+      // Also create user record in users table
+      if (data.user) {
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: data.user.id,
+            email,
+            name,
+            role: 'user' // Default role
+          })
+        
+        if (insertError) {
+          console.error('Error creating user record:', insertError)
+        }
+      }
       
       toast({
         title: "Success",
-        description: "Account created successfully",
+        description: "Account created successfully. Please check your email for verification.",
       })
       
       router.push('/login')
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to create account",
+        description: error.message || "Failed to create account",
         variant: "destructive",
       })
     } finally {

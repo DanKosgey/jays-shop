@@ -6,13 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Smartphone, User, LogOut } from "lucide-react";
 import { CartSheet } from "@/components/cart/CartSheet";
 import { useAuthStore } from "@/stores/auth-store";
+import { useEffect } from "react";
 
 export const Navbar = () => {
-  const { isAuthenticated, user, logout } = useAuthStore();
+  const { isAuthenticated, user, logout, initializeAuth } = useAuthStore();
   const router = useRouter();
 
-  const handleLogout = () => {
-    logout();
+  // Initialize auth state on component mount
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
+
+  const handleLogout = async () => {
+    await logout();
     router.push("/");
   };
 

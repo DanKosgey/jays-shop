@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -13,18 +13,63 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Search, Eye, Edit, Trash2, UserPlus } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { Database } from "../../../types/database.types"
+import Link from "next/link"
+
+// Since there's no dedicated customers DB module, we'll use Supabase client directly
+import { getSupabaseBrowserClient } from '@/server/supabase/client'
+
+type Customer = Database['public']['Tables']['customers']['Row']
 
 export default function AdminCustomers() {
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast()
 
-  // Mock customer data
-  const customers = [
-    { id: "CUST-001", name: "John Doe", email: "john@example.com", phone: "+254712345678", orders: 5, totalSpent: 125000, status: "Active" },
-    { id: "CUST-002", name: "Jane Smith", email: "jane@example.com", phone: "+254723456789", orders: 3, totalSpent: 78000, status: "Active" },
-    { id: "CUST-003", name: "Robert Johnson", email: "robert@example.com", phone: "+254734567890", orders: 1, totalSpent: 25000, status: "Inactive" },
-    { id: "CUST-004", name: "Emily Davis", email: "emily@example.com", phone: "+254745678901", orders: 7, totalSpent: 189000, status: "Active" },
-    { id: "CUST-005", name: "Michael Wilson", email: "michael@example.com", phone: "+254756789012", orders: 2, totalSpent: 42000, status: "Active" },
-  ]
+  useEffect(() => {
+    fetchCustomers()
+  }, [])
+
+  useEffect(() => {
+    if (searchTerm) {
+      const filtered = customers.filter(customer => 
+        customer.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (customer.name && customer.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (customer.phone && customer.phone.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+      setFilteredCustomers(filtered)
+    } else {
+      setFilteredCustomers(customers)
+    }
+  }, [searchTerm, customers])
+
+  const fetchCustomers = async () => {
+    try {
+      setIsLoading(true)
+      const supabase = getSupabaseBrowserClient()
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+      
+      setCustomers(data || [])
+      setFilteredCustomers(data || [])
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch customers",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -34,12 +79,13 @@ export default function AdminCustomers() {
     }
   }
 
-  const filteredCustomers = customers.filter(customer => 
-    customer.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.phone.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -76,41 +122,45 @@ export default function AdminCustomers() {
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Phone</TableHead>
-              <TableHead>Orders</TableHead>
-              <TableHead>Total Spent</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredCustomers.map((customer) => (
-              <TableRow key={customer.id}>
-                <TableCell className="font-medium">{customer.id}</TableCell>
-                <TableCell>{customer.name}</TableCell>
-                <TableCell>{customer.email}</TableCell>
-                <TableCell>{customer.phone}</TableCell>
-                <TableCell>{customer.orders}</TableCell>
-                <TableCell>KSh {customer.totalSpent.toLocaleString()}</TableCell>
-                <TableCell>
-                  <Badge className={getStatusColor(customer.status)}>
-                    {customer.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {filteredCustomers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  No customers found
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              filteredCustomers.map((customer) => (
+                <TableRow key={customer.id}>
+                  <TableCell className="font-medium">{customer.id}</TableCell>
+                  <TableCell>{customer.name}</TableCell>
+                  <TableCell>{customer.email}</TableCell>
+                  <TableCell>{customer.phone || 'N/A'}</TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor('active')}>
+                      Active
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="icon">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

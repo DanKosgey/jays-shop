@@ -1,3 +1,5 @@
+"use client"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -13,24 +15,59 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { ticketsDb } from "@/lib/db/tickets"
+import { productsDb } from "@/lib/db/products"
+import { Database } from "../../types/database.types"
+
+type Ticket = Database['public']['Tables']['tickets']['Row']
+type Product = Database['public']['Tables']['products']['Row']
 
 export default function Dashboard() {
   const { toast } = useToast()
   const router = useRouter()
+  const [stats, setStats] = useState([
+    { title: "Total Tickets", value: "0", change: "+0%", icon: Wrench },
+    { title: "Products Sold", value: "0", change: "+0%", icon: Package },
+    { title: "Orders", value: "0", change: "+0%", icon: ShoppingCart },
+    { title: "Customers", value: "0", change: "+0%", icon: Users },
+  ])
+  const [recentTickets, setRecentTickets] = useState<Ticket[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Mock data
-  const stats = [
-    { title: "Total Tickets", value: "142", change: "+12%", icon: Wrench },
-    { title: "Products Sold", value: "243", change: "+8%", icon: Package },
-    { title: "Orders", value: "89", change: "+5%", icon: ShoppingCart },
-    { title: "Customers", value: "1,243", change: "+3%", icon: Users },
-  ]
+  useEffect(() => {
+    fetchDashboardData()
+  }, [])
 
-  const recentTickets = [
-    { id: "TKT-2023-001", customer: "John Doe", device: "iPhone 13", status: "In Progress", date: "2023-06-15" },
-    { id: "TKT-2023-002", customer: "Jane Smith", device: "Samsung Galaxy S21", status: "Completed", date: "2023-06-14" },
-    { id: "TKT-2023-003", customer: "Robert Johnson", device: "Google Pixel 6", status: "Pending", date: "2023-06-14" },
-  ]
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true)
+      
+      // Fetch tickets data
+      const tickets = await ticketsDb.getAll()
+      
+      // Update stats with real data
+      const updatedStats = [...stats]
+      updatedStats[0].value = tickets.length.toString()
+      
+      // For now, we'll use mock values for other stats
+      // In a real application, you would fetch actual data for products, orders, and customers
+      updatedStats[1].value = "243"
+      updatedStats[2].value = "89"
+      updatedStats[3].value = "1,243"
+      
+      setStats(updatedStats)
+      setRecentTickets(tickets.slice(0, 3)) // Get first 3 tickets as recent
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch dashboard data",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleNewTicket = () => {
     router.push("/admin/tickets/new")
@@ -55,6 +92,14 @@ export default function Dashboard() {
       case 'pending': return 'bg-yellow-100 text-yellow-800'
       default: return 'bg-gray-100 text-gray-800'
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   return (
@@ -95,24 +140,28 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentTickets.map((ticket) => (
-                <div key={ticket.id} className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{ticket.id}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {ticket.customer} • {ticket.device}
-                    </p>
+              {recentTickets.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">No tickets found</p>
+              ) : (
+                recentTickets.map((ticket) => (
+                  <div key={ticket.id} className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{ticket.ticket_number}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {ticket.customer_name} • {ticket.device_brand} {ticket.device_model}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge className={getStatusColor(ticket.status)}>
+                        {ticket.status.replace('_', ' ')}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(ticket.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge className={getStatusColor(ticket.status)}>
-                      {ticket.status}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {ticket.date}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

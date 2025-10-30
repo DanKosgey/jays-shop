@@ -23,8 +23,8 @@ export default function Login() {
     setIsLoading(true)
 
     try {
-      // Use the actual auth store login function
-      const success = login(email, password)
+      // Use Supabase auth login function
+      const success = await login(email, password)
       
       if (success) {
         toast({
@@ -46,10 +46,10 @@ export default function Login() {
           variant: "destructive",
         })
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Something went wrong. Please try again.",
+        description: error.message || "Something went wrong. Please try again.",
         variant: "destructive",
       })
     } finally {
