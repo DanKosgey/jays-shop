@@ -71,6 +71,34 @@ export const ticketsDb = {
     }
   },
 
+  // Get tickets by customer name and phone number (for public tracking)
+  async getByCustomerInfo(customerName: string, phoneNumber: string) {
+    try {
+      const supabase = getSupabaseBrowserClient()
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('customer_name', customerName)
+        .eq('customer_phone', phoneNumber)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+      
+      // Handle the case where no tickets are found
+      if (error) {
+        // Check if it's a "no rows" error (which is expected when no tickets exist)
+        if (error.code === 'PGRST116') {
+          return []; // No tickets found
+        }
+        throw new Error(`Failed to fetch tickets: ${error.message}`)
+      }
+      
+      return data
+    } catch (error) {
+      console.error('Error in ticketsDb.getByCustomerInfo:', error)
+      throw error
+    }
+  },
+
   // Create new ticket
   async create(ticket: TicketInsert) {
     try {

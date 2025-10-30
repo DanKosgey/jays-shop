@@ -9,34 +9,66 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/hooks/use-toast"
 import { Save, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { ticketsDb } from "@/lib/db/tickets"
+import { useRouter } from "next/navigation"
+import { getSupabaseBrowserClient } from '@/server/supabase/client'
 
 export default function TicketForm() {
   const [customerName, setCustomerName] = useState("")
   const [customerEmail, setCustomerEmail] = useState("")
   const [customerPhone, setCustomerPhone] = useState("")
   const [deviceType, setDeviceType] = useState("")
+  const [deviceBrand, setDeviceBrand] = useState("")
   const [deviceModel, setDeviceModel] = useState("")
   const [issueDescription, setIssueDescription] = useState("")
   const [estimatedCost, setEstimatedCost] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Get current user
+      const supabase = getSupabaseBrowserClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        throw new Error("You must be logged in to create a ticket")
+      }
+
+      // Generate ticket number
+      const ticketNumber = `TKT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`
+
+      // Create ticket
+      const newTicket = await ticketsDb.create({
+        user_id: user.id,
+        ticket_number: ticketNumber,
+        customer_name: customerName,
+        customer_email: customerEmail,
+        customer_phone: customerPhone,
+        device_type: deviceType,
+        device_brand: deviceBrand,
+        device_model: deviceModel,
+        issue_description: issueDescription,
+        estimated_cost: estimatedCost ? Number(estimatedCost) : null,
+        status: 'received',
+        priority: 'normal'
+      })
       
       toast({
         title: "Success",
         description: "Ticket created successfully",
       })
-    } catch (error) {
+      
+      // Redirect to tickets list
+      router.push("/admin/tickets")
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to create ticket",
+        description: error.message || "Failed to create ticket",
         variant: "destructive",
       })
     } finally {
@@ -119,23 +151,22 @@ export default function TicketForm() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="deviceBrand">Device Brand</Label>
+              <Input
+                id="deviceBrand"
+                placeholder="e.g., Apple, Samsung, Huawei"
+                value={deviceBrand}
+                onChange={(e) => setDeviceBrand(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="deviceModel">Device Model</Label>
               <Input
                 id="deviceModel"
                 placeholder="e.g., iPhone 13 Pro, Samsung Galaxy S21"
                 value={deviceModel}
                 onChange={(e) => setDeviceModel(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="issueDescription">Issue Description</Label>
-              <Textarea
-                id="issueDescription"
-                placeholder="Describe the issue the device is experiencing..."
-                value={issueDescription}
-                onChange={(e) => setIssueDescription(e.target.value)}
-                rows={4}
                 required
               />
             </div>
@@ -147,6 +178,17 @@ export default function TicketForm() {
                 placeholder="e.g., 5000"
                 value={estimatedCost}
                 onChange={(e) => setEstimatedCost(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="issueDescription">Issue Description</Label>
+              <Textarea
+                id="issueDescription"
+                placeholder="Describe the issue the device is experiencing..."
+                value={issueDescription}
+                onChange={(e) => setIssueDescription(e.target.value)}
+                rows={4}
+                required
               />
             </div>
           </CardContent>
