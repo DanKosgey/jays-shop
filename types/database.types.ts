@@ -212,6 +212,69 @@ export type Database = {
           }
         ]
       }
+      second_hand_products: {
+        Row: {
+          condition: string
+          created_at: string
+          deleted_at: string | null
+          description: string | null
+          id: string
+          is_available: boolean
+          price: number | null
+          product_id: string
+          seller_email: string | null
+          seller_id: string
+          seller_name: string
+          seller_phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          condition: string
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_available?: boolean
+          price?: number | null
+          product_id: string
+          seller_email?: string | null
+          seller_id: string
+          seller_name: string
+          seller_phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          condition?: string
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_available?: boolean
+          price?: number | null
+          product_id?: string
+          seller_email?: string | null
+          seller_id?: string
+          seller_name?: string
+          seller_phone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "second_hand_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "second_hand_products_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       tickets: {
         Row: {
           actual_completion_date: string | null

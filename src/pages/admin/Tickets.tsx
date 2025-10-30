@@ -1,197 +1,149 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Filter } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { ticketsDb } from "@/lib/db/tickets";
-import { Database } from "../../../types/database.types";
+"use client"
 
-type Ticket = Database['public']['Tables']['tickets']['Row'];
+import { useState } from 'react'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Search, Plus, Eye, Edit, Trash2 } from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 
-const statusColors = {
-  received: "bg-status-received/20 text-status-received border-status-received/30",
-  diagnosing: "bg-status-diagnosing/20 text-status-diagnosing border-status-diagnosing/30",
-  awaiting_parts: "bg-status-awaiting/20 text-status-awaiting border-status-awaiting/30",
-  repairing: "bg-status-repairing/20 text-status-repairing border-status-repairing/30",
-  quality_check: "bg-status-quality/20 text-status-quality border-status-quality/30",
-  ready: "bg-status-ready/20 text-status-ready border-status-ready/30",
-  completed: "bg-status-completed/20 text-status-completed border-status-completed/30",
-  cancelled: "bg-status-cancelled/20 text-status-cancelled border-status-cancelled/30",
-};
+export default function Tickets() {
+  const [searchTerm, setSearchTerm] = useState('')
+  const router = useRouter()
+  const { toast } = useToast()
 
-const priorityColors = {
-  low: "bg-priority-low/20 text-priority-low border-priority-low/30",
-  normal: "bg-priority-normal/20 text-priority-normal border-priority-normal/30",
-  high: "bg-priority-high/20 text-priority-high border-priority-high/30",
-  urgent: "bg-priority-urgent/20 text-priority-urgent border-priority-urgent/30",
-};
+  // Mock ticket data
+  const tickets = [
+    { id: "TKT-2023-001", customer: "John Doe", device: "iPhone 13 Pro", issue: "Screen replacement", status: "In Progress", date: "2023-06-15" },
+    { id: "TKT-2023-002", customer: "Jane Smith", device: "Samsung Galaxy S21", issue: "Battery replacement", status: "Completed", date: "2023-06-14" },
+    { id: "TKT-2023-003", customer: "Robert Johnson", device: "Google Pixel 6", issue: "Camera repair", status: "Pending", date: "2023-06-14" },
+    { id: "TKT-2023-004", customer: "Emily Davis", device: "iPhone 12", issue: "Water damage", status: "In Progress", date: "2023-06-13" },
+    { id: "TKT-2023-005", customer: "Michael Wilson", device: "Samsung Galaxy Note 20", issue: "Speaker repair", status: "Completed", date: "2023-06-12" },
+  ]
 
-const Tickets = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchTickets();
-  }, []);
-
-  const fetchTickets = async () => {
-    try {
-      setLoading(true);
-      const data = await ticketsDb.getAll();
-      setTickets(data || []);
-      setError(null);
-    } catch (err) {
-      console.error("Error fetching tickets:", err);
-      setError("Failed to load tickets");
-    } finally {
-      setLoading(false);
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'completed': return 'bg-green-100 text-green-800'
+      case 'in progress': return 'bg-blue-100 text-blue-800'
+      case 'pending': return 'bg-yellow-100 text-yellow-800'
+      default: return 'bg-gray-100 text-gray-800'
     }
-  };
-
-  const handleSearch = async (term: string) => {
-    setSearchTerm(term);
-    if (term.trim() === "") {
-      fetchTickets();
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      const data = await ticketsDb.search(term);
-      setTickets(data || []);
-      setError(null);
-    } catch (err) {
-      console.error("Error searching tickets:", err);
-      setError("Failed to search tickets");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Tickets</h1>
-            <p className="text-muted-foreground">Manage repair tickets</p>
-          </div>
-          <Button size="lg" onClick={() => navigate("/admin/tickets/new")}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Ticket
-          </Button>
-        </div>
-        <Card>
-          <CardContent className="flex justify-center items-center h-32">
-            <p>Loading tickets...</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
   }
 
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Tickets</h1>
-            <p className="text-muted-foreground">Manage repair tickets</p>
-          </div>
-          <Button size="lg" onClick={() => navigate("/admin/tickets/new")}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Ticket
-          </Button>
-        </div>
-        <Card>
-          <CardContent className="flex justify-center items-center h-32">
-            <p className="text-destructive">{error}</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  const filteredTickets = tickets.filter(ticket => 
+    ticket.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ticket.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ticket.device.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ticket.issue.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const handleViewTicket = (ticketId: string) => {
+    // In a real app, this would navigate to a ticket details page
+    toast({
+      title: "View Ticket",
+      description: `Viewing details for ticket ${ticketId}`,
+    });
+  }
+
+  const handleEditTicket = (ticketId: string) => {
+    // In a real app, this would navigate to an edit page
+    toast({
+      title: "Edit Ticket",
+      description: `Editing ticket ${ticketId}`,
+    });
+  }
+
+  const handleDeleteTicket = (ticketId: string) => {
+    // In a real app, this would show a confirmation dialog and then delete the ticket
+    toast({
+      title: "Delete Ticket",
+      description: `Ticket ${ticketId} has been deleted`,
+    });
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col md:flex-row justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Tickets</h1>
-          <p className="text-muted-foreground">Manage repair tickets</p>
+          <h1 className="text-3xl font-bold">Repair Tickets</h1>
+          <p className="text-muted-foreground">
+            Manage all repair tickets and their status
+          </p>
         </div>
-        <Button size="lg" onClick={() => navigate("/admin/tickets/new")}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Ticket
-        </Button>
+        <Link href="/admin/tickets/new">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            New Ticket
+          </Button>
+        </Link>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-            <div className="flex-1 w-full md:max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search tickets..."
-                  value={searchTerm}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-            </div>
-            <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {tickets && tickets.length > 0 ? (
-              tickets.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
-                  onClick={() => navigate(`/admin/tickets/${ticket.id}`)}
-                >
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold">{ticket.ticket_number}</p>
-                      <Badge variant="outline" className={statusColors[ticket.status]}>
-                        {ticket.status}
-                      </Badge>
-                      <Badge variant="outline" className={priorityColors[ticket.priority]}>
-                        {ticket.priority}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {ticket.customer_name} • {ticket.device_brand} {ticket.device_model}
-                    </p>
-                    <p className="text-sm">{ticket.issue_description}</p>
-                  </div>
-                  <div className="text-right mt-4 md:mt-0 w-full md:w-auto">
-                    <p className="text-sm text-muted-foreground">Created</p>
-                    <p className="text-sm font-medium">
-                      {new Date(ticket.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No tickets found</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search tickets..."
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
 
-export default Tickets;
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Ticket ID</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Device</TableHead>
+              <TableHead>Issue</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredTickets.map((ticket) => (
+              <TableRow key={ticket.id}>
+                <TableCell className="font-medium">{ticket.id}</TableCell>
+                <TableCell>{ticket.customer}</TableCell>
+                <TableCell>{ticket.device}</TableCell>
+                <TableCell>{ticket.issue}</TableCell>
+                <TableCell>
+                  <Badge className={getStatusColor(ticket.status)}>
+                    {ticket.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>{ticket.date}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => handleViewTicket(ticket.id)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleEditTicket(ticket.id)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteTicket(ticket.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  )
+}

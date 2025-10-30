@@ -1,5 +1,8 @@
+"use client"
+
 import { LayoutDashboard, Wrench, Package, ShoppingCart, Users, Settings, LogOut, Menu } from "lucide-react";
-import { NavLink, useNavigate } from "react-router-dom";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
@@ -15,12 +18,13 @@ const menuItems = [
 ];
 
 const SidebarContent = ({ onItemClick }: { onItemClick?: () => void }) => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
+  const pathname = usePathname();
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    router.push("/login");
     onItemClick?.();
   };
 
@@ -34,24 +38,24 @@ const SidebarContent = ({ onItemClick }: { onItemClick?: () => void }) => {
       </div>
 
       <nav className="flex-1 p-4 space-y-2">
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.path === "/admin"}
-            onClick={onItemClick}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+        {menuItems.map((item) => {
+          const isActive = pathname === item.path || (item.path === "/admin" && pathname === "/admin");
+          return (
+            <Link
+              key={item.path}
+              href={item.path}
+              onClick={onItemClick}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                 isActive
                   ? "bg-primary text-primary-foreground shadow-md"
                   : "hover:bg-accent/50"
-              }`
-            }
-          >
-            <item.icon className="h-5 w-5" />
-            <span className="font-medium">{item.title}</span>
-          </NavLink>
-        ))}
+              }`}
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="font-medium">{item.title}</span>
+            </Link>
+          );
+        })}
       </nav>
 
       <div className="p-4 border-t">

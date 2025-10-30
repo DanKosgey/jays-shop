@@ -1,16 +1,18 @@
+"use client"
+
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { useAuthStore } from "@/stores/auth-store";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 
 export const CartSheet = () => {
   const { items, removeItem, updateQuantity, getTotalItems, getTotalPrice, clearCart } = useCartStore();
   const { isAuthenticated } = useAuthStore();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { toast } = useToast();
 
   const handleCheckout = () => {
@@ -20,7 +22,7 @@ export const CartSheet = () => {
         description: "Please login to complete your purchase.",
         variant: "destructive",
       });
-      navigate("/login");
+      router.push("/login");
       return;
     }
 

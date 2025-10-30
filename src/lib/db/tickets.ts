@@ -1,4 +1,4 @@
-import { createClientComponentClient } from '@/lib/supabase/client'
+import { getSupabaseBrowserClient } from '@/server/supabase/client'
 import { Database } from '../../../types/database.types'
 
 type Ticket = Database['public']['Tables']['tickets']['Row']
@@ -9,7 +9,7 @@ type TicketStatus = Database['public']['Enums']['ticket_status']
 export const ticketsDb = {
   // Get all tickets
   async getAll() {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('tickets')
       .select('*')
@@ -22,7 +22,7 @@ export const ticketsDb = {
 
   // Get ticket by ID
   async getById(id: string) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('tickets')
       .select('*')
@@ -36,7 +36,7 @@ export const ticketsDb = {
 
   // Get ticket by ticket number (for public tracking)
   async getByTicketNumber(ticketNumber: string) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('tickets')
       .select('*')
@@ -50,7 +50,7 @@ export const ticketsDb = {
 
   // Create new ticket
   async create(ticket: TicketInsert) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('tickets')
       .insert(ticket)
@@ -63,7 +63,7 @@ export const ticketsDb = {
 
   // Update ticket
   async update(id: string, updates: TicketUpdate) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('tickets')
       .update(updates)
@@ -77,7 +77,7 @@ export const ticketsDb = {
 
   // Delete ticket (soft delete)
   async delete(id: string) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     // Using type assertion to bypass TypeScript error for deleted_at field
     const { error } = await supabase
       .from('tickets')
@@ -89,7 +89,7 @@ export const ticketsDb = {
 
   // Filter tickets by status
   async getByStatus(status: TicketStatus) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('tickets')
       .select('*')
@@ -103,7 +103,7 @@ export const ticketsDb = {
 
   // Search tickets
   async search(query: string) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('tickets')
       .select('*')
@@ -117,7 +117,7 @@ export const ticketsDb = {
 
   // Get user's tickets
   async getByUserId(userId: string) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('tickets')
       .select('*')

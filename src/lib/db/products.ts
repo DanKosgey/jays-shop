@@ -1,4 +1,4 @@
-import { createClientComponentClient } from '@/lib/supabase/client'
+import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { Database } from '../../../types/database.types'
 
 type Product = Database['public']['Tables']['products']['Row']
@@ -8,7 +8,7 @@ type ProductUpdate = Database['public']['Tables']['products']['Update']
 export const productsDb = {
   // Get all products
   async getAll() {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -21,7 +21,7 @@ export const productsDb = {
 
   // Get product by ID
   async getById(id: string) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -35,7 +35,7 @@ export const productsDb = {
 
   // Get product by slug
   async getBySlug(slug: string | null) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -49,7 +49,7 @@ export const productsDb = {
 
   // Search products
   async search(searchTerm: string) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -63,7 +63,7 @@ export const productsDb = {
 
   // Get featured products
   async getFeatured() {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -77,7 +77,7 @@ export const productsDb = {
 
   // Get products by category
   async getByCategory(category: string) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -91,7 +91,7 @@ export const productsDb = {
 
   // Create product
   async create(product: ProductInsert) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('products')
       .insert(product)
@@ -104,7 +104,7 @@ export const productsDb = {
 
   // Update product
   async update(id: string, updates: ProductUpdate) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('products')
       .update(updates)
@@ -118,7 +118,7 @@ export const productsDb = {
 
   // Delete product (soft delete)
   async delete(id: string) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     // Using type assertion to bypass TypeScript error for deleted_at field
     const { error } = await supabase
       .from('products')
@@ -130,7 +130,7 @@ export const productsDb = {
 
   // Get low stock products
   async getLowStock(threshold: number = 5) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -145,7 +145,7 @@ export const productsDb = {
 
   // Get out of stock products
   async getOutOfStock() {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('products')
       .select('*')

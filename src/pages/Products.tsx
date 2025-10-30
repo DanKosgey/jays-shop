@@ -1,185 +1,142 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Smartphone, Search } from "lucide-react";
-import { useCartStore } from "@/stores/cart-store";
-import { useToast } from "@/hooks/use-toast";
-import { productsDb } from "@/lib/db/products";
-import { Product } from "@/lib/db/products";
+"use client"
 
-const Products = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const addItem = useCartStore((state) => state.addItem);
-  const { toast } = useToast();
+import { useState, useEffect } from 'react'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { useToast } from "@/hooks/use-toast"
+import { productsDb } from "@/lib/db/products"
+import { Database } from "../../types/database.types"
+import { Search, ShoppingCart } from "lucide-react"
+import Image from "next/image"
+import { useCartStore } from "@/stores/cart-store"
+
+type Product = Database['public']['Tables']['products']['Row']
+
+export default function Products() {
+  const [products, setProducts] = useState<Product[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast()
+  const { addItem } = useCartStore()
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    fetchProducts()
+  }, [])
+
+  useEffect(() => {
+    if (searchTerm) {
+      const filtered = products.filter(product => 
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      setFilteredProducts(filtered)
+    } else {
+      setFilteredProducts(products)
+    }
+  }, [searchTerm, products])
 
   const fetchProducts = async () => {
     try {
-      setLoading(true);
-      const data = await productsDb.getAll();
-      setProducts(data || []);
-      setError(null);
-    } catch (err) {
-      console.error("Error fetching products:", err);
-      setError("Failed to load products");
+      setIsLoading(true)
+      const data = await productsDb.getAll()
+      setProducts(data)
+      setFilteredProducts(data)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch products",
+        variant: "destructive",
+      })
     } finally {
-      setLoading(false);
+      setIsLoading(false)
     }
-  };
-
-  const handleSearch = async (term: string) => {
-    setSearchTerm(term);
-    if (term.trim() === "") {
-      fetchProducts();
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      const data = await productsDb.search(term);
-      setProducts(data || []);
-      setError(null);
-    } catch (err) {
-      console.error("Error searching products:", err);
-      setError("Failed to search products");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddToCart = (id: string, name: string, price: number) => {
-    addItem({ id, name, price });
-    toast({
-      title: "Added to Cart",
-      description: `${name} has been added to your cart.`,
-    });
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen py-8">
-        <div className="container mx-auto px-4">
-          <h1 className="text-4xl font-bold mb-8">Products</h1>
-          <div className="flex justify-center items-center h-64">
-            <p>Loading products...</p>
-          </div>
-        </div>
-      </div>
-    );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen py-8">
-        <div className="container mx-auto px-4">
-          <h1 className="text-4xl font-bold mb-8">Products</h1>
-          <div className="flex justify-center items-center h-64">
-            <p className="text-destructive">{error}</p>
-          </div>
-        </div>
-      </div>
-    );
+  const handleAddToCart = (product: Product) => {
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price || 0,
+      image: product.image_url
+    });
+    toast({
+      title: "Added to cart",
+      description: `${product.name} has been added to your cart.`,
+    });
   }
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold mb-8">Products</h1>
-
-        {/* Filters */}
-        <div className="bg-card rounded-lg border p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select>
-              <SelectTrigger>
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="cases">Cases</SelectItem>
-                <SelectItem value="chargers">Chargers</SelectItem>
-                <SelectItem value="screen-protectors">Screen Protectors</SelectItem>
-                <SelectItem value="accessories">Accessories</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select>
-              <SelectTrigger>
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">Newest</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
-                <SelectItem value="popular">Most Popular</SelectItem>
-              </SelectContent>
-            </Select>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Our Products</h1>
+          <p className="text-muted-foreground mb-6">
+            Browse our collection of high-quality phone accessories and parts
+          </p>
+          
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search products..."
+              className="pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </div>
 
-        {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {products.map((product) => (
-            <Card key={product.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="aspect-square bg-muted rounded-md mb-4 flex items-center justify-center">
-                  {product.image_url ? (
-                    <img 
-                      src={product.image_url} 
-                      alt={product.name} 
-                      className="h-full w-full object-cover rounded-md"
-                    />
-                  ) : (
-                    <Smartphone className="h-16 w-16 text-muted-foreground" />
-                  )}
-                </div>
-                <CardTitle className="text-lg">{product.name}</CardTitle>
-                <CardDescription>{product.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold text-primary">KSh {product.price.toLocaleString()}</span>
-                    <span className={`text-sm ${product.stock_quantity && product.stock_quantity > 0 ? 'text-success' : 'text-destructive'}`}>
-                      {product.stock_quantity && product.stock_quantity > 0 ? 'In Stock' : 'Out of Stock'}
-                    </span>
-                  </div>
-                  <Button 
-                    className="w-full"
-                    onClick={() => handleAddToCart(product.id, product.name, product.price)}
-                    disabled={!product.stock_quantity || product.stock_quantity <= 0}
-                  >
-                    Add to Cart
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        
-        {products.length === 0 && (
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">No products found</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredProducts.map((product) => (
+              <Card key={product.id} className="flex flex-col">
+                <CardHeader className="p-0">
+                  <div className="aspect-square bg-muted rounded-t-lg flex items-center justify-center">
+                    {product.image_url && product.image_url.startsWith('http') ? (
+                      <Image 
+                        src={product.image_url} 
+                        alt={product.name} 
+                        width={300}
+                        height={300}
+                        className="h-full w-full object-cover rounded-t-lg"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16 flex items-center justify-center">
+                        <span className="text-gray-500 text-xs">No Image</span>
+                      </div>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1 p-4">
+                  <CardTitle className="text-lg mb-1">{product.name}</CardTitle>
+                  <CardDescription className="mb-3 line-clamp-2">
+                    {product.description}
+                  </CardDescription>
+                  <div className="font-bold text-lg text-primary">
+                    KSh {product.price?.toLocaleString()}
+                  </div>
+                </CardContent>
+                <CardFooter className="p-4 pt-0">
+                  <Button className="w-full" onClick={() => handleAddToCart(product)}>
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Add to Cart
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
           </div>
         )}
       </div>
     </div>
-  );
-};
-
-export default Products;
+  )
+}

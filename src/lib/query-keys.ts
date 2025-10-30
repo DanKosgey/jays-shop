@@ -1,0 +1,51 @@
+// Query keys for React Query
+export const queryKeys = {
+  tickets: {
+    all: ['tickets'] as const,
+    lists: () => [...queryKeys.tickets.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.tickets.lists(), filters] as const,
+    details: () => [...queryKeys.tickets.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.tickets.details(), id] as const,
+  },
+  products: {
+    all: ['products'] as const,
+    lists: () => [...queryKeys.products.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.products.lists(), filters] as const,
+    details: () => [...queryKeys.products.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.products.details(), id] as const,
+    featured: () => [...queryKeys.products.all, 'featured'] as const,
+    lowStock: () => [...queryKeys.products.all, 'lowStock'] as const,
+    outOfStock: () => [...queryKeys.products.all, 'outOfStock'] as const,
+  },
+  orders: {
+    all: ['orders'] as const,
+    lists: () => [...queryKeys.orders.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.orders.lists(), filters] as const,
+    details: () => [...queryKeys.orders.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.orders.details(), id] as const,
+  },
+  customers: {
+    all: ['customers'] as const,
+    lists: () => [...queryKeys.customers.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.customers.lists(), filters] as const,
+    details: () => [...queryKeys.customers.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.customers.details(), id] as const,
+  },
+  secondHandProducts: {
+    all: ['secondHandProducts'] as const,
+    lists: () => [...queryKeys.secondHandProducts.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.secondHandProducts.lists(), filters] as const,
+    details: () => [...queryKeys.secondHandProducts.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.secondHandProducts.details(), id] as const,
+  },
+  dashboard: {
+    metrics: () => ['dashboard', 'metrics'] as const,
+    ticketSummary: () => ['dashboard', 'ticketSummary'] as const,
+    customerSummary: () => ['dashboard', 'customerSummary'] as const,
+    productSalesSummary: () => ['dashboard', 'productSalesSummary'] as const,
+    orderDetails: () => ['dashboard', 'orderDetails'] as const,
+    monthlyRevenueTrends: () => ['dashboard', 'monthlyRevenueTrends'] as const,
+    ticketStatusDistribution: () => ['dashboard', 'ticketStatusDistribution'] as const,
+    topProductsBySales: () => ['dashboard', 'topProductsBySales'] as const,
+  },
+}

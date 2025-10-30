@@ -1,4 +1,4 @@
-import { createClientComponentClient } from '@/lib/supabase/client'
+import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { Database } from '../../../types/database.types'
 
 type Order = Database['public']['Tables']['orders']['Row']
@@ -9,7 +9,7 @@ type OrderStatus = Database['public']['Enums']['order_status']
 export const ordersDb = {
   // Get all orders with items
   async getAll() {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('orders')
       .select(`
@@ -25,7 +25,7 @@ export const ordersDb = {
 
   // Get order by ID
   async getById(id: string) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('orders')
       .select(`
@@ -42,7 +42,7 @@ export const ordersDb = {
 
   // Get orders by status
   async getByStatus(status: OrderStatus) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('orders')
       .select(`
@@ -59,7 +59,7 @@ export const ordersDb = {
 
   // Get user's orders
   async getByUserId(userId: string) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('orders')
       .select(`
@@ -76,7 +76,7 @@ export const ordersDb = {
 
   // Create order
   async create(order: OrderInsert) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('orders')
       .insert(order)
@@ -89,7 +89,7 @@ export const ordersDb = {
 
   // Update order
   async update(id: string, updates: OrderUpdate) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     const { data, error } = await supabase
       .from('orders')
       .update(updates)
@@ -103,7 +103,7 @@ export const ordersDb = {
 
   // Delete order (soft delete)
   async delete(id: string) {
-    const supabase = createClientComponentClient()
+    const supabase = getSupabaseBrowserClient()
     // Using type assertion to bypass TypeScript error for deleted_at field
     const { error } = await supabase
       .from('orders')

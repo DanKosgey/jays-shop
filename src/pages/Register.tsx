@@ -1,95 +1,90 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Link, useNavigate } from "react-router-dom";
-import { Smartphone } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+"use client"
 
-const Register = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [acceptTerms, setAcceptTerms] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
+import { useState } from 'react'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { useToast } from "@/hooks/use-toast"
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
+export default function Register() {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast()
+  const router = useRouter()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     
-    if (!acceptTerms) {
-      toast({
-        title: "Terms & Conditions",
-        description: "Please accept the terms and conditions to continue.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (password !== confirmPassword) {
       toast({
-        title: "Password Mismatch",
-        description: "Passwords do not match. Please try again.",
+        title: "Error",
+        description: "Passwords do not match",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
-    if (password.length < 8) {
+    setIsLoading(true)
+
+    try {
+      // Simulate register API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
       toast({
-        title: "Weak Password",
-        description: "Password must be at least 8 characters long.",
+        title: "Success",
+        description: "Account created successfully",
+      })
+      
+      router.push('/login')
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create account",
         variant: "destructive",
-      });
-      return;
+      })
+    } finally {
+      setIsLoading(false)
     }
-
-    // Simulate registration
-    toast({
-      title: "Account Created!",
-      description: "Your account has been created successfully.",
-    });
-    
-    setTimeout(() => {
-      navigate("/login");
-    }, 1000);
-  };
-
-  const getPasswordStrength = () => {
-    if (password.length === 0) return { label: "", color: "" };
-    if (password.length < 6) return { label: "Weak", color: "text-destructive" };
-    if (password.length < 10) return { label: "Medium", color: "text-warning" };
-    return { label: "Strong", color: "text-success" };
-  };
-
-  const strength = getPasswordStrength();
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 py-12 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Smartphone className="h-12 w-12 text-primary" />
-          </div>
-          <CardTitle className="text-2xl">Create Account</CardTitle>
-          <CardDescription>Sign up for your RepairHub account</CardDescription>
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
+          <CardDescription className="text-center">
+            Enter your information to create an account
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleRegister} className="space-y-4">
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
@@ -100,13 +95,7 @@ const Register = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-              {password && (
-                <p className={`text-sm ${strength.color}`}>
-                  Password Strength: {strength.label}
-                </p>
-              )}
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
               <Input
@@ -118,36 +107,20 @@ const Register = () => {
                 required
               />
             </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="terms" 
-                checked={acceptTerms}
-                onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
-              />
-              <label htmlFor="terms" className="text-sm cursor-pointer">
-                I accept the{" "}
-                <Link to="/terms" className="text-primary hover:underline">
-                  Terms & Conditions
-                </Link>
-              </label>
-            </div>
-
-            <Button type="submit" className="w-full" size="lg">
-              Create Account
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button className="w-full" type="submit" disabled={isLoading}>
+              {isLoading ? "Creating account..." : "Create account"}
             </Button>
-
-            <div className="text-center text-sm">
-              <span className="text-muted-foreground">Already have an account? </span>
-              <Link to="/login" className="text-primary hover:underline">
+            <div className="text-center text-sm text-muted-foreground">
+              Already have an account?{" "}
+              <Link href="/login" className="text-primary hover:underline">
                 Sign in
               </Link>
             </div>
-          </form>
-        </CardContent>
+          </CardFooter>
+        </form>
       </Card>
     </div>
-  );
-};
-
-export default Register;
+  )
+}
