@@ -32,12 +32,22 @@ export default function Login() {
           description: "Logged in successfully",
         })
         
+        // Add a small delay before redirecting to ensure auth state is properly set
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // Redirect based on user role
         const { user } = useAuthStore.getState()
         if (user?.role === 'admin') {
           router.push('/admin')
         } else {
-          router.push('/')
+          // Check if there's a redirect parameter
+          const urlParams = new URLSearchParams(window.location.search)
+          const redirect = urlParams.get('redirect')
+          if (redirect) {
+            router.push(redirect)
+          } else {
+            router.push('/')
+          }
         }
       } else {
         toast({

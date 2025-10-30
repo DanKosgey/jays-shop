@@ -60,19 +60,18 @@ export default function Register() {
         throw new Error(error.message)
       }
       
-      // Also create user record in users table
+      // Also create user record in profiles table (not users table)
       if (data.user) {
         const { error: insertError } = await supabase
-          .from('users')
+          .from('profiles')
           .insert({
             id: data.user.id,
             email,
-            name,
             role: 'user' // Default role
           })
         
         if (insertError) {
-          console.error('Error creating user record:', insertError)
+          console.error('Error creating profile record:', insertError)
         }
       }
       
