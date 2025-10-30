@@ -38,14 +38,14 @@ export const useAuthStore = create<AuthStore>()(
           }
           
           if (data.user) {
-            // Get user role from database
-            const { data: userData, error: userError } = await supabase
-              .from('users')
+            // Get user role from profiles table instead of users table
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
               .select('role')
               .eq('id', data.user.id)
               .single();
             
-            const role = userData?.role === 'admin' ? 'admin' : 'user';
+            const role = profileData?.role === 'admin' ? 'admin' : 'user';
             
             set({
               user: { 
@@ -78,14 +78,15 @@ export const useAuthStore = create<AuthStore>()(
           const { data: { session } } = await supabase.auth.getSession();
           
           if (session?.user) {
-            // Get user role from database
-            const { data: userData, error } = await supabase
-              .from('users')
+            // Get user role from profiles table instead of users table
+            const { data: profileData, error } = await supabase
+              .from('profiles')
               .select('role')
               .eq('id', session.user.id)
               .single();
             
-            const role = userData?.role === 'admin' ? 'admin' : 'user';
+            // If profile doesn't exist, default to user role
+            const role = profileData?.role === 'admin' ? 'admin' : 'user';
             
             set({
               user: { 

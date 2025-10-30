@@ -1,4 +1,4 @@
-import { getSupabaseServerClient } from '@/lib/supabase/server'
+import { getSupabaseServerClient } from '@/server/supabase/server'
 import { Database } from '../../../types/database.types'
 
 type Product = Database['public']['Tables']['products']['Row']
