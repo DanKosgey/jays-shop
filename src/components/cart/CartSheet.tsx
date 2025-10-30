@@ -8,7 +8,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import GuestCheckoutForm from "./GuestCheckoutForm";
 
 export const CartSheet = () => {
@@ -17,6 +17,11 @@ export const CartSheet = () => {
   const router = useRouter();
   const { toast } = useToast();
   const [showGuestCheckout, setShowGuestCheckout] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleAuthenticatedCheckout = () => {
     toast({
@@ -30,17 +35,20 @@ export const CartSheet = () => {
     setShowGuestCheckout(false);
   };
 
+  // Only show the badge on the client side to avoid hydration mismatches
+  const totalItems = isClient ? getTotalItems() : 0;
+
   return (
     <Sheet>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <ShoppingCart className="h-5 w-5" />
-          {getTotalItems() > 0 && (
+          {totalItems > 0 && (
             <Badge 
               variant="destructive" 
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
             >
-              {getTotalItems()}
+              {totalItems}
             </Badge>
           )}
         </Button>
@@ -49,7 +57,7 @@ export const CartSheet = () => {
         <SheetHeader>
           <SheetTitle>Shopping Cart</SheetTitle>
           <SheetDescription>
-            {getTotalItems()} item(s) in your cart
+            {totalItems} item(s) in your cart
           </SheetDescription>
         </SheetHeader>
         

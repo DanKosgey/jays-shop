@@ -5,28 +5,16 @@ export const subscribeToTableChanges = (
   table: string,
   callback: (payload: any) => void
 ) => {
-  // Check if we're in a development environment where Supabase might not be available
-  if (process.env.NODE_ENV === 'development') {
-    // In development, if Supabase is not running, we'll silently fail realtime subscriptions
-    // This prevents console spam while still allowing the app to function
-    try {
-      const supabase = getSupabaseBrowserClient()
-      // Test if we can connect to Supabase
-      if (!supabase) {
-        return {
-          unsubscribe: () => {},
-        }
-      }
-    } catch (e) {
-      // Supabase not available, return mock channel
+  try {
+    const supabase = getSupabaseBrowserClient()
+    
+    // Check if Supabase client is available
+    if (!supabase) {
       return {
         unsubscribe: () => {},
       }
     }
-  }
-
-  try {
-    const supabase = getSupabaseBrowserClient()
+    
     const channel = supabase
       .channel(`realtime:${table}`)
       .on(
@@ -38,16 +26,17 @@ export const subscribeToTableChanges = (
         },
         callback
       )
-      .subscribe((status) => {
+      .subscribe((status, err) => {
         if (status === 'CHANNEL_ERROR') {
-          // Only show detailed errors in development
-          if (process.env.NODE_ENV === 'development') {
-            console.warn(`Realtime subscription error for table ${table}`)
+          // Log error only in development and only if there's an actual error object
+          if (process.env.NODE_ENV === 'development' && err) {
+            console.warn(`Realtime subscription error for table ${table}:`, err.message || 'Unknown error')
           }
         } else if (status === 'CLOSED') {
-          // Only show detailed errors in development
+          // This is normal when components unmount, so we don't need to log it
+          // Only log unexpected closures in development
           if (process.env.NODE_ENV === 'development') {
-            console.warn(`Realtime subscription closed for table ${table}`)
+            // We don't log CLOSED status as it's expected behavior
           }
         }
       })
@@ -56,7 +45,7 @@ export const subscribeToTableChanges = (
   } catch (error) {
     // Only show detailed errors in development
     if (process.env.NODE_ENV === 'development') {
-      console.warn(`Failed to create realtime subscription for table ${table}:`, error)
+      console.warn(`Failed to create realtime subscription for table ${table}:`, error instanceof Error ? error.message : 'Unknown error')
     }
     // Return a mock channel object to prevent errors
     return {
@@ -71,27 +60,16 @@ export const subscribeToRecordChanges = (
   recordId: string,
   callback: (payload: any) => void
 ) => {
-  // Check if we're in a development environment where Supabase might not be available
-  if (process.env.NODE_ENV === 'development') {
-    // In development, if Supabase is not running, we'll silently fail realtime subscriptions
-    try {
-      const supabase = getSupabaseBrowserClient()
-      // Test if we can connect to Supabase
-      if (!supabase) {
-        return {
-          unsubscribe: () => {},
-        }
-      }
-    } catch (e) {
-      // Supabase not available, return mock channel
+  try {
+    const supabase = getSupabaseBrowserClient()
+    
+    // Check if Supabase client is available
+    if (!supabase) {
       return {
         unsubscribe: () => {},
       }
     }
-  }
-
-  try {
-    const supabase = getSupabaseBrowserClient()
+    
     const channel = supabase
       .channel(`realtime:${table}:${recordId}`)
       .on(
@@ -104,17 +82,14 @@ export const subscribeToRecordChanges = (
         },
         callback
       )
-      .subscribe((status) => {
+      .subscribe((status, err) => {
         if (status === 'CHANNEL_ERROR') {
-          // Only show detailed errors in development
-          if (process.env.NODE_ENV === 'development') {
-            console.warn(`Realtime subscription error for table ${table}, record ${recordId}`)
+          // Log error only in development and only if there's an actual error object
+          if (process.env.NODE_ENV === 'development' && err) {
+            console.warn(`Realtime subscription error for table ${table}, record ${recordId}:`, err.message || 'Unknown error')
           }
         } else if (status === 'CLOSED') {
-          // Only show detailed errors in development
-          if (process.env.NODE_ENV === 'development') {
-            console.warn(`Realtime subscription closed for table ${table}, record ${recordId}`)
-          }
+          // This is normal when components unmount, so we don't need to log it
         }
       })
 
@@ -122,7 +97,7 @@ export const subscribeToRecordChanges = (
   } catch (error) {
     // Only show detailed errors in development
     if (process.env.NODE_ENV === 'development') {
-      console.warn(`Failed to create realtime subscription for table ${table}, record ${recordId}:`, error)
+      console.warn(`Failed to create realtime subscription for table ${table}, record ${recordId}:`, error instanceof Error ? error.message : 'Unknown error')
     }
     // Return a mock channel object to prevent errors
     return {
@@ -133,29 +108,17 @@ export const subscribeToRecordChanges = (
 
 // Unsubscribe from a channel
 export const unsubscribeFromChannel = (channel: any) => {
-  // Check if we're in a development environment where Supabase might not be available
-  if (process.env.NODE_ENV === 'development') {
-    try {
-      const supabase = getSupabaseBrowserClient()
-      // Test if we can connect to Supabase
-      if (!supabase) {
-        return;
-      }
-    } catch (e) {
-      // Supabase not available, silently return
-      return;
-    }
-  }
-
   try {
     if (channel && typeof channel.unsubscribe === 'function') {
       const supabase = getSupabaseBrowserClient()
-      supabase.removeChannel(channel)
+      if (supabase) {
+        supabase.removeChannel(channel)
+      }
     }
   } catch (error) {
     // Only show detailed errors in development
     if (process.env.NODE_ENV === 'development') {
-      console.warn('Failed to unsubscribe from realtime channel:', error)
+      console.warn('Failed to unsubscribe from realtime channel:', error instanceof Error ? error.message : 'Unknown error')
     }
   }
 }

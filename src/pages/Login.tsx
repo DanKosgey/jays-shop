@@ -38,7 +38,7 @@ export default function Login() {
         // Redirect based on user role
         const { user } = useAuthStore.getState()
         if (user?.role === 'admin') {
-          router.push('/admin')
+          router.push('/admin-new')
         } else {
           // Check if there's a redirect parameter
           const urlParams = new URLSearchParams(window.location.search)
