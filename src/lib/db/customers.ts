@@ -1,4 +1,4 @@
-import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+import { getSupabaseBrowserClient } from '@/server/supabase/client'
 import { Database } from '../../../types/database.types'
 
 type Customer = Database['public']['Tables']['customers']['Row']

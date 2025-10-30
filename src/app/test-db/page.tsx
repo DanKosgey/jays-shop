@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+import { getSupabaseBrowserClient } from '@/server/supabase/client'
 
 export default function TestDBPage() {
   const [status, setStatus] = useState('Testing database connection...')

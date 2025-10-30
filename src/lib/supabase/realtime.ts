@@ -1,4 +1,4 @@
-import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+import { getSupabaseBrowserClient } from '@/server/supabase/client'
 
 // Subscribe to real-time changes for a table
 export const subscribeToTableChanges = (

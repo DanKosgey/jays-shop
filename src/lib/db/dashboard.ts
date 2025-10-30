@@ -1,4 +1,4 @@
-import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+import { getSupabaseBrowserClient } from '@/server/supabase/client'
 import { Database } from '../../../types/database.types'
 
 // Define types for materialized views that may not be in the auto-generated types

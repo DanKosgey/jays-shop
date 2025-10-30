@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { Database } from '../../../types/database.types'
 
-// Use the same singleton pattern as in lib/supabase/client.ts
+// Use a singleton pattern to ensure only one Supabase client instance
 let supabaseClient: ReturnType<typeof createClient<Database>> | null = null
 
 // Get Supabase browser client
