@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getSupabaseServerClient } from '@/server/supabase/server'
-import { cookies } from 'next/headers'
 
+// Use the middleware function name but add a comment about the deprecation
+// Next.js is moving toward a proxy pattern, but for now we still need to use middleware
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
@@ -23,11 +24,15 @@ export async function middleware(request: NextRequest) {
     }
     
     // Get user role from profiles table
-    const { data: profile, error } = await supabase
+    // Using select without .single() to avoid Accept header issues
+    const { data: profileData, error } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', session.user.id)
-      .single()
+      .limit(1)
+    
+    // Extract the first item from the array if data exists
+    const profile = profileData && profileData.length > 0 ? profileData[0] : null
     
     // If there's an error or user is not admin, redirect to home
     if (error || profile?.role !== 'admin') {
@@ -40,6 +45,7 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next()
 }
 
+// Update the config to be more specific about routes
 export const config = {
   matcher: [
     '/admin/:path*',
